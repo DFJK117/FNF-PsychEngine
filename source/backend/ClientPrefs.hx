@@ -20,7 +20,7 @@ import states.TitleState;
 	public var splashAlpha:Float = 0.6;
 	public var lowQuality:Bool = false;
 	public var shaders:Bool = true;
-	public var cacheOnGPU:Bool = #if !switch false #else true #end; //From Stilic
+	public var cacheOnGPU:Bool = #if !switch false #else true #end; // GPU Caching made by Raltyro
 	public var framerate:Int = 60;
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
@@ -29,12 +29,22 @@ import states.TitleState;
 		[0xFFC24B99, 0xFFFFFFFF, 0xFF3C1F56],
 		[0xFF00FFFF, 0xFFFFFFFF, 0xFF1542B7],
 		[0xFF12FA05, 0xFFFFFFFF, 0xFF0A4447],
-		[0xFFF9393F, 0xFFFFFFFF, 0xFF651038]];
+		[0xFFF9393F, 0xFFFFFFFF, 0xFF651038],
+		[0xFF00FF88, 0xFFFFFFFF, 0xFF005533],
+		[0xFFFFDD00, 0xFFFFFFFF, 0xFF665500],
+		[0xFFFF7700, 0xFFFFFFFF, 0xFF663300],
+		[0xFFFF44AA, 0xFFFFFFFF, 0xFF660033],
+		[0xFF88FF00, 0xFFFFFFFF, 0xFF336600]];
 	public var arrowRGBPixel:Array<Array<FlxColor>> = [
 		[0xFFE276FF, 0xFFFFF9FF, 0xFF60008D],
 		[0xFF3DCAFF, 0xFFF4FFFF, 0xFF003060],
 		[0xFF71E300, 0xFFF6FFE6, 0xFF003100],
-		[0xFFFF884E, 0xFFFFFAF5, 0xFF6C0000]];
+		[0xFFFF884E, 0xFFFFFAF5, 0xFF6C0000],
+		[0xFF44FFAA, 0xFFF0FFF8, 0xFF005533],
+		[0xFFFFEE44, 0xFFFFFDF0, 0xFF665500],
+		[0xFFFF9944, 0xFFFFF5F0, 0xFF663300],
+		[0xFFFF66BB, 0xFFFFF0F8, 0xFF660033],
+		[0xFFAAFF44, 0xFFF8FFF0, 0xFF336600]];
 
 	public var ghostTapping:Bool = true;
 	public var timeBarType:String = 'Time Left';
@@ -69,12 +79,16 @@ import states.TitleState;
 
 	public var comboOffset:Array<Int> = [0, 0, 0, 0];
 	public var ratingOffset:Int = 0;
-	public var sickWindow:Int = 45;
-	public var goodWindow:Int = 90;
-	public var badWindow:Int = 135;
-	public var safeFrames:Float = 10;
+	public var sickWindow:Float = 45.0;
+	public var goodWindow:Float = 90.0;
+	public var badWindow:Float = 135.0;
+	public var safeFrames:Float = 10.0;
 	public var guitarHeroSustains:Bool = true;
 	public var discordRPC:Bool = true;
+	public var loadingScreen:Bool = true;
+	public var language:String = 'en-US';
+	public var twoPlayerMode:Bool = false;
+	public var keyCount:Int = 4;
 }
 
 class ClientPrefs {
@@ -88,6 +102,19 @@ class ClientPrefs {
 		'note_left'		=> [A, LEFT],
 		'note_down'		=> [S, DOWN],
 		'note_right'	=> [D, RIGHT],
+		
+		// Multi-K extra keys (5K-9K)
+		'note_extra_0'	=> [F, FIVE],
+		'note_extra_1'	=> [G, SIX],
+		'note_extra_2'	=> [H, SEVEN],
+		'note_extra_3'	=> [J, EIGHT],
+		'note_extra_4'	=> [K, NINE],
+		
+		// Player 2 keys (for two-player mode)
+		'p2_note_left'	=> [J],
+		'p2_note_down'	=> [K],
+		'p2_note_up'	=> [I],
+		'p2_note_right'	=> [L],
 		
 		'ui_up'			=> [W, UP],
 		'ui_left'		=> [A, LEFT],
@@ -211,9 +238,7 @@ class ClientPrefs {
 		if (FlxG.save.data.mute != null)
 			FlxG.sound.muted = FlxG.save.data.mute;
 
-		#if DISCORD_ALLOWED
-		DiscordClient.check();
-		#end
+		#if DISCORD_ALLOWED DiscordClient.check(); #end
 
 		// controls on a separate save file
 		var save:FlxSave = new FlxSave();
@@ -251,8 +276,9 @@ class ClientPrefs {
 	}
 	public static function toggleVolumeKeys(?turnOn:Bool = true)
 	{
-		FlxG.sound.muteKeys = turnOn ? TitleState.muteKeys : [];
-		FlxG.sound.volumeDownKeys = turnOn ? TitleState.volumeDownKeys : [];
-		FlxG.sound.volumeUpKeys = turnOn ? TitleState.volumeUpKeys : [];
+		final emptyArray = [];
+		FlxG.sound.muteKeys = turnOn ? TitleState.muteKeys : emptyArray;
+		FlxG.sound.volumeDownKeys = turnOn ? TitleState.volumeDownKeys : emptyArray;
+		FlxG.sound.volumeUpKeys = turnOn ? TitleState.volumeUpKeys : emptyArray;
 	}
 }
