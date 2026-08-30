@@ -1,9 +1,9 @@
 name: Build
 on:
   push:
-      branches: [ main, experimental ]
+      branches: [main, experimental]
         pull_request:
-            branches: [ main, experimental ]
+            branches: [main, experimental]
               workflow_dispatch:
               jobs:
                 buildWindows:
