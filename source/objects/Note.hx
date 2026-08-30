@@ -97,10 +97,17 @@ class Note extends FlxSprite
 	public static var keyCount:Int = 4; // Multi-K support: 4-9 keys
 	public static var swagWidth(get, never):Float;
 	private static function get_swagWidth():Float {
-		// Narrow arrows for higher key counts
-		var baseWidth:Float = 160 * 0.7;
-		if (keyCount <= 4) return baseWidth;
-		return baseWidth * (4.0 / keyCount);
+		// Aggressive scaling for higher key counts - no crowding
+		var baseWidth:Float = 160 * 0.7; // 4K = 112px
+		switch(keyCount) {
+			case 4: return baseWidth;           // 112px
+			case 5: return baseWidth * 0.82;    // ~92px
+			case 6: return baseWidth * 0.70;    // ~78px
+			case 7: return baseWidth * 0.60;    // ~67px
+			case 8: return baseWidth * 0.52;    // ~58px
+			case 9: return baseWidth * 0.46;    // ~52px
+			default: return baseWidth * (4.0 / keyCount);
+		}
 	}
 	public static var colArray:Array<String> = ['purple', 'blue', 'green', 'red', 'cyan', 'yellow', 'orange', 'pink', 'teal'];
 	public static var defaultNoteSkin(default, never):String = 'noteSkins/NOTE_assets';

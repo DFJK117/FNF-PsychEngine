@@ -10,6 +10,7 @@ import states.TitleState;
 @:structInit class SaveVariables {
 	public var downScroll:Bool = false;
 	public var middleScroll:Bool = false;
+	public var centerArrows:Bool = true; // Center arrows on screen (auto-disabled in 2P mode)
 	public var opponentStrums:Bool = true;
 	public var showFPS:Bool = true;
 	public var flashing:Bool = true;
@@ -89,6 +90,17 @@ import states.TitleState;
 	public var language:String = 'en-US';
 	public var twoPlayerMode:Bool = false;
 	public var keyCount:Int = 4;
+	public var downScrollP2:Bool = false; // P2 independent scroll direction
+	public var arrowRGBP2:Array<Array<FlxColor>> = [ // P2 independent note colors
+		[0xFFFF66AA, 0xFFFFFFFF, 0xFF660033],
+		[0xFF66AAFF, 0xFFFFFFFF, 0xFF003366],
+		[0xFFAAFF66, 0xFFFFFFFF, 0xFF336600],
+		[0xFFFFAA66, 0xFFFFFFFF, 0xFF663300],
+		[0xFFFF66FF, 0xFFFFFFFF, 0xFF660066],
+		[0xFF66FFFF, 0xFFFFFFFF, 0xFF006666],
+		[0xFFFFFF66, 0xFFFFFFFF, 0xFF666600],
+		[0xFF66FF66, 0xFFFFFFFF, 0xFF006600],
+		[0xFFAA66FF, 0xFFFFFFFF, 0xFF330066]];
 }
 
 class ClientPrefs {
