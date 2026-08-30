@@ -1,127 +1,131 @@
-![PsychionalEngineLogo](docs/img/PsychEngineLogoTweak.png)
+# 🎵 Doubao Engine（豆包引擎）
 
-Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
+> 基于 **Psych Engine** 深度优化的 Friday Night Funkin' 游戏引擎，专注性能、多键位与双人玩法。
 
-## Installation:
+![GitHub Workflow Status](https://github.com/DFJK117/FNF-PsychEngine/actions/workflows/main.yml/badge.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android-blue)
+![Language](https://img.shields.io/badge/language-Haxe%20%2F%20Lua-orange)
+![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-Refer to [the Build Instructions](/docs/BUILDING.md)
+---
 
-## Customization:
+## 📖 引擎简介
 
-If you wish to disable things like *Lua Scripts* or *Video Cutscenes*, you can refer to the `Project.xml` file.
+Doubao Engine（豆包引擎）是在开源引擎 [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) 基础上进行二次开发的 FNF 引擎。原始引擎最初用于 [Mind Games Mod](https://gamebanana.com/mods/301107)，旨在修复原版的大量问题，同时保持休闲游玩的体验，并为新手开发者提供更友好的模组编写方式。
 
-Inside `Project.xml`, you will find several variables to customize Psych Engine to your liking.
+本引擎在此基础上进一步追求**极致性能**、**多键位支持**与**双人同键盘对战**，并提供完整的中文本地化。
 
-To start you off, disabling *Video Cutscenes* should be simple, simply delete the line `"VIDEOS_ALLOWED"` or comment it out by wrapping the line in XML-like comments, like this: `<!-- YOUR_LINE_HERE -->`
+---
 
-Same goes for *Lua Scripts*, comment out or delete the line with `LUA_ALLOWED`, this and other customization options are all available within the `Project.xml` file.
+## ✨ 核心特性
 
-## Softcoding (.lua/.hx)
-For this you can head over to [the wiki](https://shadowmario.github.io/psychengine.lua)
+| 特性 | 说明 | 状态 |
+| :--- | :--- | :---: |
+| 🎮 双人键盘模式 | P1 操控对手（Dad），P2 操控 BF，各自独立按键与配色 | 🚧 开发中 |
+| 🎹 多 K 键位支持 | 4K / 5K / 6K / 7K / 9K 箭头，参考 Leather Engine | 🚧 开发中 |
+| 🔄 键位算法转换 | 4K↔多K 纯算法转换，多K转少K智能避让叠键 | 🚧 开发中 |
+| 🇨🇳 中文本地化 | 界面、选项、贴图全面中文化 | 🚧 开发中 |
+| ⚡ 性能优化 | 对象池、渲染优化、内存回收模拟 | 🚧 开发中 |
+| 📜 Lua 脚本 | 完整保留 Psych Lua API，模组兼容 | ✅ 已支持 |
+| 🎬 视频过场 | 基于 hxvlc 的视频播放 | ✅ 已支持 |
+| 🎨 HScript | 热重载脚本支持 | ✅ 已支持 |
 
-There you can learn how to use the 212 PlayState funcions in your mod!
+> ✅ 已可用　🚧 开发中　📋 规划中
 
-## Credits:
-* Shadow Mario - Main Programmer and Head of Psych Engine.
-* Riveren - Main Artist/Animator of Psych Engine.
+---
 
-### Special Thanks
-* bbpanzu - Ex-Team Member (Programmer).
-* crowplexus - HScript Iris, Input System v3, and Other PRs.
-* Kamizeta - Creator of Pessy, Psych Engine's mascot.
-* MaxNeton - Loading Screen Easter Egg Artist/Animator.
-* Keoiki - Note Splash Animations and Latin Alphabet.
-* SqirraRNG - Crash Handler and Base code for Chart Editor's Waveform.
-* EliteMasterEric - Runtime Shaders support and Other PRs.
-* MAJigsaw77 - .MP4 Video Loader Library (hxvlc).
-* iFlicky - Composer of Psync, Tea Time and some sound effects.
-* KadeDev - Fixed some issues on Chart Editor and Other PRs.
-* superpowers04 - LUA JIT Fork.
-* CheemsAndFriends - Creator of FlxAnimate.
-* Ezhalt - Pessy's Easter Egg Jingle.
-* MaliciousBunny - Video for the Final Update.
+## 📥 下载
 
-***
+前往 [**Actions 构建页**](https://github.com/DFJK117/FNF-PsychEngine/actions) 下载最新自动构建的 Windows 版本：
 
-# Features
+1. 点击最新一次显示 **Success**（绿色✓）的构建
+2. 下拉到页面底部 **Artifacts**
+3. 下载 `windowsBuild` 压缩包
+4. 解压后运行 `.exe` 即可
 
-## Attractive animated dialogue boxes:
+> ⚠️ 需要登录 GitHub 账号才能下载 Actions 产物。
 
-![Animated Dialogue Boxes](docs/img/dialogue.gif)
+---
 
-## New Main Menu
-* A brand new menu that makes your experience even better!
-![Main Menu](docs/img/MainMenu.png)
+## 🔨 自行编译
 
-## Mod Support
-* Probably one of the main points of this engine, you can code in .lua files outside of the source code, making your own weeks without even messing with the source!
-* Comes with a Mod Organizing/Disabling Menu.
-![Mod Support](docs/img/ModsMenu.png)
+### Windows 环境要求
 
+- [Haxe 4.3.4](https://haxe.org/download/)
+- 依次执行 `setup/windows.bat` 安装依赖库
 
-## Atleast one change to every week:
-### Week 1:
-  * New Dad Left sing sprite
-  * Unused stage lights are now used
-  * Dad Battle has a spotlight effect for the breakdown
-### Week 2:
-  * Both BF and Skid & Pump does "Hey!" animations
-  * Thunders does a quick light flash and zooms the camera in slightly
-  * Added a quick transition/cutscene to Monster
-### Week 3:
-  * BF does "Hey!" during Philly Nice
-  * Blammed has a cool new colors flash during that sick part of the song
-### Week 4:
-  * Better hair physics for Mom/Boyfriend (Maybe even slightly better than Week 7's :eyes:)
-  * Henchmen die during all songs. Yeah :(
-### Week 5:
-  * Bottom Boppers and GF does "Hey!" animations during Cocoa and Eggnog
-  * On Winter Horrorland, GF bops her head slower in some parts of the song.
-### Week 6:
-  * On Thorns, the HUD is hidden during the cutscene
-  * Also there's the Background girls being spooky during the "Hey!" parts of the Instrumental
+### 编译命令
 
-## Cool new Chart Editor changes and countless bug fixes
-![Chart Editor](docs/img/chart.png)
-* You can now chart "Event" notes, which are bookmarks that trigger specific actions that usually were hardcoded on the vanilla version of the game.
-* Your song's BPM can now have decimal values
-* You can manually adjust a Note's strum time if you're really going for milisecond precision
-* You can change a note's type on the Editor, it comes with five example types:
-  * Alt Animation: Forces an alt animation to play, useful for songs like Ugh/Stress
-  * Hey: Forces a "Hey" animation instead of the base Sing animation, if Boyfriend hits this note, Girlfriend will do a "Hey!" too.
-  * Hurt Notes: If Boyfriend hits this note, he plays a miss animation and loses some health.
-  * GF Sing: Rather than the character hitting the note and singing, Girlfriend sings instead.
-  * No Animation: Character just hits the note, no animation plays.
+```bash
+haxelib run lime build windows
+```
 
-## Multiple editors to assist you in making your own Mod
-![Master Editor Menu](docs/img/editors.png)
-* Working both for Source code modding and Downloaded builds!
+### 依赖库版本（精确对应）
 
-## Story mode menu rework:
-![Story Mode Menu](docs/img/storymode.png)
-* Added a different BG to every song (less Tutorial)
-* All menu characters are now in individual spritesheets, makes modding it easier.
+| 库 | 版本 |
+| :--- | :--- |
+| lime | 8.1.2 |
+| openfl | 9.3.3 |
+| flixel | 5.6.1 |
+| flixel-addons | 3.2.2 |
+| hscript-iris | 1.1.3 |
+| tjson | 1.4.0 |
+| hxdiscord_rpc | 1.2.4 |
+| hxvlc | 2.0.1 |
 
-## Credits menu
-![Credits Menu](docs/img/credits.png)
-* You can add a head icon, name, description and a Redirect link for when the player presses Enter while the item is currently selected.
+更多细节见 [BUILDING.md](docs/BUILDING.md)。
 
-## Awards/Achievements
-* The engine comes with 16 example achievements that you can mess with and learn how it works (Check Achievements.hx and search for "checkForAchievement" on PlayState.hx)
-![Achievements](docs/img/Achievements.png)
+---
 
-## Options menu:
-* You can change Note colors, Delay and Combo Offset, Controls and Preferences there.
- * On Preferences you can toggle Downscroll, Middlescroll, Anti-Aliasing, Framerate, Low Quality, Note Splashes, Flashing Lights, etc.
-![Options](docs/img/Options.png)
+## 🎮 双人模式设计（规划）
 
-## Other gameplay features:
-* When the enemy hits a note, their strum note also glows.
-* Lag doesn't impact the camera movement and player icon scaling anymore.
-* Some stuff based on Week 7's changes has been put in (Background colors on Freeplay, Note splashes)
-* You can reset your Score on Freeplay/Story Mode by pressing Reset button.
-* You can listen to a song or adjust Scroll Speed/Damage taken/etc. on Freeplay by pressing Space.
-* You can enable "Combo Stacking" in Gameplay Options. This causes the combo sprites to just be one sprite with an animation rather than sprites spawning each note hit.
+- **玩家 1（左侧）**：操控对手 Dad，默认按键 `W A S D`
+- **玩家 2（右侧）**：操控 BF，默认按键 `方向键`
+- 开启双人模式后可选择是否关闭箭头居中
+- 每位玩家可独立调整：
+  - 按键颜色
+  - 上滚 / 下滚方向
+  - 判定偏移
 
+---
 
-#### Psych Engine by ShadowMario, Friday Night Funkin' by ninjamuffin99
+## 🎹 多 K 键位设计（规划）
+
+- 键位增多时箭头**自动等比缩小**，避免拥挤
+- 4K → 多K：算法自动分配箭头轨道
+- 多K → 4K：智能合并，尽量避免叠键
+- 参考 [Leather Engine](https://github.com/Leather128/LeatherEngine) 的多键箭头样式
+
+---
+
+## 📁 目录结构
+
+```
+FNF-PsychEngine/
+├── source/            # 引擎源代码（Haxe）
+│   ├── states/        # 游戏状态
+│   ├── objects/       # 箭头、角色等对象
+│   ├── psychlua/      # Lua 脚本引擎
+│   └── options/       # 选项菜单
+├── assets/            # 游戏资源
+├── mods/              # 模组目录
+├── setup/             # 环境安装脚本
+└── Project.xml        # 编译配置
+```
+
+---
+
+## 🙏 致谢
+
+- [ShadowMario / Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) — 原始引擎
+- [Leather128 / Leather Engine](https://github.com/Leather128/LeatherEngine) — 多键位参考
+- [HaxeFlixel](https://haxeflixel.com/) — 底层游戏框架
+- 所有 FNF 开源社区的贡献者
+
+---
+
+## 📜 许可证
+
+本项目遵循 [Apache License 2.0](LICENSE) 开源协议。
+
+Friday Night Funkin' 原版由 [The Funkin' Crew](https://ninja-muffin24.itch.io/funkin) 制作。
