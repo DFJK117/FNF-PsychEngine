@@ -51,23 +51,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Key Count',
-			'Number of lanes (4K-9K). Charts are auto-converted.\nRequires restart to take effect.',
-			'keyCount',
-			INT);
-		option.displayFormat = '%vK';
-		option.scrollSpeed = 1;
-		option.minValue = 4;
-		option.maxValue = 9;
-		option.changeValue = 1;
-		addOption(option);
-
-		var option:Option = new Option('Two Player Mode',
-			'Enable local 2-player mode.\nPlayer 1: WASD / Arrows, Player 2: IJKL.\nRequires restart to take effect.',
-			'twoPlayerMode',
-			BOOL);
-		addOption(option);
-
 		var option:Option = new Option('Hitsound Volume',
 			'Funny notes does \"Tick!\" when you hit them.',
 			'hitsoundVolume',
