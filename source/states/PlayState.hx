@@ -5,7 +5,6 @@ import backend.StageData;
 import backend.WeekData;
 import backend.Song;
 import backend.Rating;
-import backend.ChartConverter;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;
@@ -50,7 +49,7 @@ import psychlua.HScript;
 #end
 
 #if HSCRIPT_ALLOWED
-import psychlua.HScriptInfos;
+import psychlua.HScript.HScriptInfos;
 import crowplexus.iris.Iris;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
@@ -259,7 +258,6 @@ class PlayState extends MusicBeatState
 
 	// Less laggy controls
 	private var keysArray:Array<String>;
-	private var keysArrayP2:Array<String>; // P2 keys (controls BF in 2P mode)
 	public var songName:String;
 
 	// Callbacks for stages
@@ -289,27 +287,12 @@ class PlayState extends MusicBeatState
 		PauseSubState.songName = null; //Reset to default
 		playbackRate = ClientPrefs.getGameplaySetting('songspeed');
 
-		// Multi-K: load key count from settings and generate key array
-		Note.keyCount = ClientPrefs.data.keyCount;
-		if (Note.keyCount < 4) Note.keyCount = 4;
-		if (Note.keyCount > 9) Note.keyCount = 9;
-		var baseKeys:Array<String> = ['note_left', 'note_down', 'note_up', 'note_right'];
-		keysArray = [];
-		for (i in 0...Note.keyCount) {
-			if (i < baseKeys.length)
-				keysArray.push(baseKeys[i]);
-			else
-				keysArray.push('note_extra_' + (i - 4));
-		}
-		// P2 keys (controls BF in 2P mode)
-		var baseKeysP2:Array<String> = ['p2_note_left', 'p2_note_down', 'p2_note_up', 'p2_note_right'];
-		keysArrayP2 = [];
-		for (i in 0...Note.keyCount) {
-			if (i < baseKeysP2.length)
-				keysArrayP2.push(baseKeysP2[i]);
-			else
-				keysArrayP2.push('p2_note_extra_' + (i - 4));
-		}
+		keysArray = [
+			'note_left',
+			'note_down',
+			'note_up',
+			'note_right'
+		];
 
 		if(FlxG.sound.music != null)
 			FlxG.sound.music.stop();
@@ -1353,73 +1336,15 @@ class PlayState extends MusicBeatState
 		var sectionsData:Array<SwagSection> = PlayState.SONG.notes;
 		var ghostNotesCaught:Int = 0;
 		var daBpm:Float = Conductor.bpm;
-
-		// === Doubao Engine: Pure Algorithm Chart Conversion ===
-		var convertedSectionNotes:Array<Array<Dynamic>> = [];
+	
 		for (section in sectionsData)
-			convertedSectionNotes.push(section.sectionNotes.copy());
-
-		if (Note.keyCount != totalColumns)
 		{
-			var allNotes:Array<Dynamic> = [];
-			for (sIdx in 0...sectionsData.length)
-			{
-				var section = sectionsData[sIdx];
-				for (i in 0...section.sectionNotes.length)
-				{
-					final songNotes:Array<Dynamic> = section.sectionNotes[i];
-					var rawNoteData:Int = Std.int(songNotes[1]);
-					var noteDataVal:Int = rawNoteData % totalColumns;
-					var mustPressVal:Bool = rawNoteData < totalColumns;
-					var note:Dynamic = {
-						strumTime: songNotes[0],
-						noteData: noteDataVal,
-						holdLength: songNotes[2],
-						noteType: songNotes[3],
-						mustPress: mustPressVal,
-						sectionIndex: sIdx
-					};
-					allNotes.push(note);
-				}
-			}
-
-			var fromKeys:Int = ChartConverter.detectKeyCount(allNotes);
-			if (fromKeys < 4) fromKeys = 4;
-			if (fromKeys > 9) fromKeys = 9;
-
-			var converted:Array<Dynamic> = ChartConverter.convertChart(allNotes, fromKeys, Note.keyCount);
-
-			for (sIdx in 0...sectionsData.length)
-				convertedSectionNotes[sIdx] = [];
-
-			for (note in converted)
-			{
-				var sIdx:Int = note.sectionIndex;
-				if (sIdx < 0 || sIdx >= convertedSectionNotes.length) sIdx = 0;
-				var finalNoteData:Int = note.noteData;
-				if (!note.mustPress) finalNoteData += Note.keyCount;
-				convertedSectionNotes[sIdx].push([
-					note.strumTime,
-					finalNoteData,
-					note.holdLength,
-					note.noteType
-				]);
-			}
-
-			totalColumns = Note.keyCount;
-			trace('Doubao Engine: Chart converted from ' + fromKeys + 'K to ' + Note.keyCount + 'K');
-		}
-
-		for (sIdx in 0...sectionsData.length)
-		{
-			var section = sectionsData[sIdx];
 			if (section.changeBPM != null && section.changeBPM && section.bpm != null && daBpm != section.bpm)
 				daBpm = section.bpm;
 
-			var notesToUse:Array<Dynamic> = convertedSectionNotes[sIdx];
-			for (i in 0...notesToUse.length)
+			for (i in 0...section.sectionNotes.length)
 			{
-				final songNotes: Array<Dynamic> = notesToUse[i];
+				final songNotes: Array<Dynamic> = section.sectionNotes[i];
 				var spawnTime: Float = songNotes[0];
 				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
 				var holdLength: Float = songNotes[2];
@@ -1603,7 +1528,7 @@ class PlayState extends MusicBeatState
 	{
 		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
 		var strumLineY:Float = ClientPrefs.data.downScroll ? (FlxG.height - 150) : 50;
-		for (i in 0...Note.keyCount)
+		for (i in 0...4)
 		{
 			// FlxG.log.add(i);
 			var targetAlpha:Float = 1;
@@ -1897,7 +1822,7 @@ class PlayState extends MusicBeatState
 								if(cpuControlled && !daNote.blockHit && daNote.canBeHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
 									goodNoteHit(daNote);
 							}
-							else if (!ClientPrefs.data.twoPlayerMode && daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
+							else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
 								opponentNoteHit(daNote);
 
 							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
@@ -2851,45 +2776,6 @@ class PlayState extends MusicBeatState
 		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
 	}
 
-	// P1 controls opponent in 2P mode
-	function opponentKeyPressed(key:Int):Void
-	{
-		if(!ClientPrefs.data.twoPlayerMode || cpuControlled || paused || inCutscene || key < 0 || key >= opponentStrums.length || !generatedMusic || endingSong) return;
-
-		var lastTime:Float = Conductor.songPosition;
-		if(Conductor.songPosition >= 0) Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
-
-		// Find opponent notes that can be hit (mustPress == false)
-		var oppInputNotes:Array<Note> = notes.members.filter(function(n:Note):Bool {
-			var canHit:Bool = n != null && n.canBeHit && !n.mustPress && !n.tooLate && !n.wasGoodHit && !n.blockHit && !n.hitByOpponent;
-			return canHit && !n.isSustainNote && Math.abs(n.noteData) == key;
-		});
-		oppInputNotes.sort(sortHitNotes);
-
-		if (oppInputNotes.length != 0) {
-			var funnyNote:Note = oppInputNotes[0];
-			if (oppInputNotes.length > 1) {
-				var doubleNote:Note = oppInputNotes[1];
-				if (Math.abs(doubleNote.noteData) == Math.abs(funnyNote.noteData)) {
-					if (Math.abs(doubleNote.strumTime - funnyNote.strumTime) < 1.0)
-						invalidateNote(doubleNote);
-					else if (doubleNote.strumTime < funnyNote.strumTime)
-						funnyNote = doubleNote;
-				}
-			}
-			opponentNoteHit(funnyNote);
-		}
-
-		Conductor.songPosition = lastTime;
-
-		var spr:StrumNote = opponentStrums.members[key];
-		if(spr != null && spr.animation.curAnim.name != 'confirm')
-		{
-			spr.playAnim('pressed');
-			spr.resetAnim = 0;
-		}
-	}
-
 	private function onKeyRelease(event:KeyboardEvent):Void
 	{
 		var eventKey:FlxKey = event.keyCode;
@@ -2931,50 +2817,6 @@ class PlayState extends MusicBeatState
 	// Hold notes
 	private function keysCheck():Void
 	{
-		// TWO-PLAYER MODE: P1 controls opponent, P2 controls BF
-		if (ClientPrefs.data.twoPlayerMode && !cpuControlled)
-		{
-			// P2 keys (control BF - mustPress=true)
-			var pressArrayP2:Array<Bool> = [];
-			for (key in keysArrayP2)
-				pressArrayP2.push(controls.justPressed(key));
-			for (i in 0...pressArrayP2.length)
-				if(pressArrayP2[i] && strumsBlocked[i] != true)
-					keyPressed(i);
-
-			// P1 keys (control opponent - mustPress=false)
-			var pressArrayP1:Array<Bool> = [];
-			for (key in keysArray)
-				pressArrayP1.push(controls.justPressed(key));
-			for (i in 0...pressArrayP1.length)
-				if(pressArrayP1[i])
-					opponentKeyPressed(i);
-
-			// Sustain handling for P2 (BF)
-			if (startedCountdown && !inCutscene && !boyfriend.stunned && generatedMusic)
-			{
-				var holdArrayP2:Array<Bool> = [];
-				for (key in keysArrayP2)
-					holdArrayP2.push(controls.pressed(key));
-				if (notes.length > 0) {
-					for (n in notes) {
-						var canHit:Bool = (n != null && !strumsBlocked[n.noteData] && n.canBeHit
-							&& n.mustPress && !n.tooLate && !n.wasGoodHit && !n.blockHit);
-						if (guitarHeroSustains)
-							canHit = canHit && n.parent != null && n.parent.wasGoodHit;
-						if (canHit && n.isSustainNote) {
-							var released:Bool = !holdArrayP2[n.noteData];
-							if (!released)
-								goodNoteHit(n);
-						}
-					}
-				}
-				if (!holdArrayP2.contains(true) || endingSong)
-					playerDance();
-			}
-			return;
-		}
-
 		// HOLDING
 		var holdArray:Array<Bool> = [];
 		var pressArray:Array<Bool> = [];
