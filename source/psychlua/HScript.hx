@@ -13,11 +13,6 @@ import psychlua.FunkinLua;
 import tea.SScript;
 class HScript extends SScript
 {
-	public static class HScriptInfos
-	{
-		public var fileName:String;
-		public var showLine:Bool;
-	}
 
 	public var modFolder:String;
 
@@ -494,3 +489,9 @@ class CustomFlxColor {
 	}
 }
 #end
+
+class HScriptInfos
+{
+	public var fileName:String;
+	public var showLine:Bool;
+}
