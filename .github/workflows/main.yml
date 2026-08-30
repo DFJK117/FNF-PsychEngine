@@ -31,4 +31,3 @@ on:
                                                                                                                                                                                   with:
                                                                                                                                                                                             name: windowsBuild
                                                                                                                                                                                                       path: export/release/windows/bin
-                                                                                                                                                                                                      
