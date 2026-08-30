@@ -82,12 +82,7 @@ class StrumNote extends FlxSprite
 			animation.add('red', [7]);
 			animation.add('blue', [5]);
 			animation.add('purple', [4]);
-			animation.add('cyan', [8]);
-			animation.add('yellow', [9]);
-			animation.add('orange', [10]);
-			animation.add('pink', [11]);
-			animation.add('teal', [12]);
-			switch (Math.abs(noteData) % Note.colArray.length)
+			switch (Math.abs(noteData) % 4)
 			{
 				case 0:
 					animation.add('static', [0]);
