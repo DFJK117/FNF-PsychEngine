@@ -10,7 +10,6 @@ import states.TitleState;
 @:structInit class SaveVariables {
 	public var downScroll:Bool = false;
 	public var middleScroll:Bool = false;
-	public var centerArrows:Bool = true; // Center arrows on screen (auto-disabled in 2P mode)
 	public var opponentStrums:Bool = true;
 	public var showFPS:Bool = true;
 	public var flashing:Bool = true;
@@ -30,22 +29,12 @@ import states.TitleState;
 		[0xFFC24B99, 0xFFFFFFFF, 0xFF3C1F56],
 		[0xFF00FFFF, 0xFFFFFFFF, 0xFF1542B7],
 		[0xFF12FA05, 0xFFFFFFFF, 0xFF0A4447],
-		[0xFFF9393F, 0xFFFFFFFF, 0xFF651038],
-		[0xFF00FF88, 0xFFFFFFFF, 0xFF005533],
-		[0xFFFFDD00, 0xFFFFFFFF, 0xFF665500],
-		[0xFFFF7700, 0xFFFFFFFF, 0xFF663300],
-		[0xFFFF44AA, 0xFFFFFFFF, 0xFF660033],
-		[0xFF88FF00, 0xFFFFFFFF, 0xFF336600]];
+		[0xFFF9393F, 0xFFFFFFFF, 0xFF651038]];
 	public var arrowRGBPixel:Array<Array<FlxColor>> = [
 		[0xFFE276FF, 0xFFFFF9FF, 0xFF60008D],
 		[0xFF3DCAFF, 0xFFF4FFFF, 0xFF003060],
 		[0xFF71E300, 0xFFF6FFE6, 0xFF003100],
-		[0xFFFF884E, 0xFFFFFAF5, 0xFF6C0000],
-		[0xFF44FFAA, 0xFFF0FFF8, 0xFF005533],
-		[0xFFFFEE44, 0xFFFFFDF0, 0xFF665500],
-		[0xFFFF9944, 0xFFFFF5F0, 0xFF663300],
-		[0xFFFF66BB, 0xFFFFF0F8, 0xFF660033],
-		[0xFFAAFF44, 0xFFF8FFF0, 0xFF336600]];
+		[0xFFFF884E, 0xFFFFFAF5, 0xFF6C0000]];
 
 	public var ghostTapping:Bool = true;
 	public var timeBarType:String = 'Time Left';
@@ -88,19 +77,6 @@ import states.TitleState;
 	public var discordRPC:Bool = true;
 	public var loadingScreen:Bool = true;
 	public var language:String = 'en-US';
-	public var twoPlayerMode:Bool = false;
-	public var keyCount:Int = 4;
-	public var downScrollP2:Bool = false; // P2 independent scroll direction
-	public var arrowRGBP2:Array<Array<FlxColor>> = [ // P2 independent note colors
-		[0xFFFF66AA, 0xFFFFFFFF, 0xFF660033],
-		[0xFF66AAFF, 0xFFFFFFFF, 0xFF003366],
-		[0xFFAAFF66, 0xFFFFFFFF, 0xFF336600],
-		[0xFFFFAA66, 0xFFFFFFFF, 0xFF663300],
-		[0xFFFF66FF, 0xFFFFFFFF, 0xFF660066],
-		[0xFF66FFFF, 0xFFFFFFFF, 0xFF006666],
-		[0xFFFFFF66, 0xFFFFFFFF, 0xFF666600],
-		[0xFF66FF66, 0xFFFFFFFF, 0xFF006600],
-		[0xFFAA66FF, 0xFFFFFFFF, 0xFF330066]];
 }
 
 class ClientPrefs {
@@ -114,19 +90,6 @@ class ClientPrefs {
 		'note_left'		=> [A, LEFT],
 		'note_down'		=> [S, DOWN],
 		'note_right'	=> [D, RIGHT],
-		
-		// Multi-K extra keys (5K-9K)
-		'note_extra_0'	=> [F, FIVE],
-		'note_extra_1'	=> [G, SIX],
-		'note_extra_2'	=> [H, SEVEN],
-		'note_extra_3'	=> [J, EIGHT],
-		'note_extra_4'	=> [K, NINE],
-		
-		// Player 2 keys (for two-player mode)
-		'p2_note_left'	=> [J],
-		'p2_note_down'	=> [K],
-		'p2_note_up'	=> [I],
-		'p2_note_right'	=> [L],
 		
 		'ui_up'			=> [W, UP],
 		'ui_left'		=> [A, LEFT],
