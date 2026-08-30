@@ -10,7 +10,7 @@ class DiscordClient
 	public static var isInitialized:Bool = false;
 	private static final _defaultID:String = "863222024192262205";
 	public static var clientID(default, set):String = _defaultID;
-	private static var presence:DiscordRichPresence = DiscordRichPresence.create();
+	private static var presence:DiscordRichPresence = new DiscordRichPresence();
 
 	public static function check()
 	{
