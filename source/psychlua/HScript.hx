@@ -489,9 +489,3 @@ class CustomFlxColor {
 	}
 }
 #end
-
-class HScriptInfos
-{
-	public var fileName:String;
-	public var showLine:Bool;
-}
