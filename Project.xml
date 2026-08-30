@@ -113,8 +113,8 @@
 
 	<!-- _______________________________ Libraries ______________________________ -->
 
-	<haxelib name="flixel" version="5.6.1"/>
-	<haxelib name="flixel-addons" version="3.2.2"/>
+	<haxelib name="flixel" version="5.2.2"/>
+	<haxelib name="flixel-addons" version="3.3.2"/>
 <haxelib name="flixel-ui"/>
 <haxelib name="SScript"/>
 	<haxelib name="tjson" version="1.4.0"/>
