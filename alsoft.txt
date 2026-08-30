@@ -1,0 +1,7 @@
+[General]
+drivers=wasapi
+channels=automatic
+sample-type=auto
+frequency=auto
+periods=4
+period-size=1024
