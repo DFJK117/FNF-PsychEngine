@@ -110,8 +110,10 @@ class Song
 
 			for (note in section.sectionNotes)
 			{
-				var gottaHitNote:Bool = (note[1] < 4) ? section.mustHitSection : !section.mustHitSection;
-				note[1] = (note[1] % 4) + (gottaHitNote ? 0 : 4);
+				// Doubao Engine: section ownership uses dynamic lane count instead of hardcoded 4
+				var kc:Int = DoubaoConfig.keyCount;
+				var gottaHitNote:Bool = (note[1] < kc) ? section.mustHitSection : !section.mustHitSection;
+				note[1] = (note[1] % kc) + (gottaHitNote ? 0 : kc);
 
 				if(!Std.isOfType(note[3], String))
 					note[3] = Note.defaultNoteTypes[note[3]]; //compatibility with Week 7 and 0.1-0.3 psych charts

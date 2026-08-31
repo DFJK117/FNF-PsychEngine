@@ -7,6 +7,31 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		title = Language.getPhrase('gameplay_menu', 'Gameplay Settings');
 		rpcTitle = 'Gameplay Settings Menu'; //for Discord Rich Presence
 
+		// ===== Doubao Engine options =====
+		var dbOption:Option = new Option('Two Player Mode',
+			'P1 (WASD+FGHJK) controls opponent on the left,\nP2 (Arrows+ZXCVB) controls BF on the right.',
+			'doubaoTwoPlayer',
+			BOOL);
+		addOption(dbOption);
+
+		dbOption = new Option('Lane Count (4K-9K)',
+			'Number of lanes per side. Arrows auto-shrink to fit.\nTakes effect when a song starts.',
+			'doubaoKeys',
+			INT);
+		dbOption.displayFormat = '%vK';
+		dbOption.scrollSpeed = 1;
+		dbOption.minValue = 4;
+		dbOption.maxValue = 9;
+		dbOption.changeValue = 1;
+		addOption(dbOption);
+
+		dbOption = new Option('P1 Downscroll',
+			'In two-player mode, makes the Player 1 (opponent)\nside scroll down independently.',
+			'doubaoP1DownScroll',
+			BOOL);
+		addOption(dbOption);
+		// ===== End Doubao Engine options =====
+
 		//I'd suggest using "Downscroll" as an example for making your own option since it is the simplest here
 		var option:Option = new Option('Downscroll', //Name
 			'If checked, notes go Down instead of Up, simple enough.', //Description

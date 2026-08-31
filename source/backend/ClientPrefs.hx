@@ -76,7 +76,13 @@ import states.TitleState;
 	public var guitarHeroSustains:Bool = true;
 	public var discordRPC:Bool = true;
 	public var loadingScreen:Bool = true;
-	public var language:String = 'en-US';
+	public var language:String = 'zh-CN';
+
+	// Doubao Engine: multi-key lanes (4/5/6/7/9) and two-player keyboard mode
+	public var doubaoKeys:Int = 4;
+	public var doubaoTwoPlayer:Bool = false;
+	// Player 1 (opponent) independent scroll direction in two-player mode
+	public var doubaoP1DownScroll:Bool = false;
 }
 
 class ClientPrefs {
@@ -234,6 +240,9 @@ class ClientPrefs {
 			}
 			reloadVolumeKeys();
 		}
+
+		// Doubao Engine: sync multi-key / two-player config early, before any chart is parsed
+		DoubaoConfig.syncFromPrefs();
 	}
 
 	inline public static function getGameplaySetting(name:String, defaultValue:Dynamic = null, ?customDefaultValue:Bool = false):Dynamic

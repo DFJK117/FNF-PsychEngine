@@ -1,6 +1,7 @@
 package objects;
 
 import backend.animation.PsychAnimationController;
+import backend.DoubaoConfig;
 
 import shaders.RGBPalette;
 import shaders.RGBPalette.RGBShaderReference;
@@ -28,14 +29,16 @@ class StrumNote extends FlxSprite
 	public function new(x:Float, y:Float, leData:Int, player:Int) {
 		animation = new PsychAnimationController(this);
 
-		rgbShader = new RGBShaderReference(this, Note.initializeGlobalRGBShader(leData));
+		// Doubao Engine: wrap color index for >4K lanes to avoid array out-of-range
+		var colorIdx:Int = leData % 4;
+		rgbShader = new RGBShaderReference(this, Note.initializeGlobalRGBShader(colorIdx));
 		rgbShader.enabled = false;
 		if(PlayState.SONG != null && PlayState.SONG.disableNoteRGB) useRGBShader = false;
-		
-		var arr:Array<FlxColor> = ClientPrefs.data.arrowRGB[leData];
-		if(PlayState.isPixelStage) arr = ClientPrefs.data.arrowRGBPixel[leData];
-		
-		if(leData <= arr.length)
+
+		var arr:Array<FlxColor> = ClientPrefs.data.arrowRGB[colorIdx];
+		if(PlayState.isPixelStage) arr = ClientPrefs.data.arrowRGBPixel[colorIdx];
+
+		if(arr != null)
 		{
 			@:bypassAccessor
 			{
@@ -111,7 +114,7 @@ class StrumNote extends FlxSprite
 			animation.addByPrefix('red', 'arrowRIGHT');
 
 			antialiasing = ClientPrefs.data.antialiasing;
-			setGraphicSize(Std.int(width * 0.7));
+			setGraphicSize(Std.int(width * 0.7 * DoubaoConfig.noteScale()));
 
 			switch (Math.abs(noteData) % 4)
 			{

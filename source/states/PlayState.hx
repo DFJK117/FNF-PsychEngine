@@ -5,6 +5,7 @@ import backend.StageData;
 import backend.WeekData;
 import backend.Song;
 import backend.Rating;
+import backend.DoubaoConfig;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;
@@ -286,6 +287,10 @@ class PlayState extends MusicBeatState
 
 		PauseSubState.songName = null; //Reset to default
 		playbackRate = ClientPrefs.getGameplaySetting('songspeed');
+
+		// Doubao Engine: sync multi-key / two-player config and lane spacing
+		DoubaoConfig.syncFromPrefs();
+		Note.swagWidth = DoubaoConfig.swagWidth();
 
 		keysArray = [
 			'note_left',
@@ -1273,6 +1278,8 @@ class PlayState extends MusicBeatState
 
 	private function generateSong():Void
 	{
+		// Doubao Engine: total columns = lanes per side * 2
+		totalColumns = DoubaoConfig.totalColumns();
 		// FlxG.log.add(ChartParser.parse());
 		songSpeed = PlayState.SONG.speed;
 		songSpeedType = ClientPrefs.getGameplaySetting('scrolltype');
@@ -1346,18 +1353,23 @@ class PlayState extends MusicBeatState
 			{
 				final songNotes: Array<Dynamic> = section.sectionNotes[i];
 				var spawnTime: Float = songNotes[0];
-				var noteColumn: Int = Std.int(songNotes[1] % totalColumns);
+				final rawColumn:Int = Std.int(songNotes[1]);
+				// Doubao Engine: lane wraps around per-side key count, opponent side is the upper half
+				var noteColumn: Int = rawColumn % DoubaoConfig.keyCount;
 				var holdLength: Float = songNotes[2];
 				var noteType: String = !Std.isOfType(songNotes[3], String) ? Note.defaultNoteTypes[songNotes[3]] : songNotes[3];
 				if (Math.isNaN(holdLength))
 					holdLength = 0.0;
 
-				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
+				// true = opponent Dad lane, false = boyfriend BF lane
+				var isOpponentNote:Bool = rawColumn >= DoubaoConfig.keyCount;
+				// normal mode: only BF is manual; two-player mode: both sides are manual
+				var gottaHitNote:Bool = DoubaoConfig.columnMustPress(rawColumn);
 
 				if (i != 0) {
 					// CLEAR ANY POSSIBLE GHOST NOTES
 					for (evilNote in unspawnNotes) {
-						var matches: Bool = (noteColumn == evilNote.noteData && gottaHitNote == evilNote.mustPress && evilNote.noteType == noteType);
+						var matches: Bool = (noteColumn == evilNote.noteData && isOpponentNote == evilNote.isOpponent && evilNote.noteType == noteType);
 						if (matches && Math.abs(spawnTime - evilNote.strumTime) < flixel.math.FlxMath.EPSILON) {
 							if (evilNote.tail.length > 0)
 								for (tail in evilNote.tail)
@@ -1378,6 +1390,7 @@ class PlayState extends MusicBeatState
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
 				swagNote.animSuffix = isAlt ? "-alt" : "";
 				swagNote.mustPress = gottaHitNote;
+				swagNote.isOpponent = isOpponentNote;
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
 	
@@ -1395,6 +1408,7 @@ class PlayState extends MusicBeatState
 						var sustainNote:Note = new Note(spawnTime + (curStepCrochet * susNote), noteColumn, oldNote, true);
 						sustainNote.animSuffix = swagNote.animSuffix;
 						sustainNote.mustPress = swagNote.mustPress;
+						sustainNote.isOpponent = swagNote.isOpponent;
 						sustainNote.gfNote = swagNote.gfNote;
 						sustainNote.noteType = swagNote.noteType;
 						sustainNote.scrollFactor.set();
@@ -1528,18 +1542,23 @@ class PlayState extends MusicBeatState
 	{
 		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
 		var strumLineY:Float = ClientPrefs.data.downScroll ? (FlxG.height - 150) : 50;
-		for (i in 0...4)
+		for (i in 0...DoubaoConfig.keyCount)
 		{
 			// FlxG.log.add(i);
 			var targetAlpha:Float = 1;
 			if (player < 1)
 			{
-				if(!ClientPrefs.data.opponentStrums) targetAlpha = 0;
+				if(DoubaoConfig.twoPlayer)
+					targetAlpha = 1; // P1 controls the opponent, must be fully visible
+				else if(!ClientPrefs.data.opponentStrums) targetAlpha = 0;
 				else if(ClientPrefs.data.middleScroll) targetAlpha = 0.35;
 			}
 
 			var babyArrow:StrumNote = new StrumNote(strumLineX, strumLineY, i, player);
 			babyArrow.downScroll = ClientPrefs.data.downScroll;
+			// Doubao Engine: in two-player mode P1 (opponent) can use its own scroll direction
+			if(DoubaoConfig.twoPlayer && player < 1 && ClientPrefs.data.doubaoP1DownScroll)
+				babyArrow.downScroll = true;
 			if (!isStoryMode && !skipArrowStartTween)
 			{
 				//babyArrow.y -= 10;
@@ -1552,7 +1571,8 @@ class PlayState extends MusicBeatState
 				playerStrums.add(babyArrow);
 			else
 			{
-				if(ClientPrefs.data.middleScroll)
+				// vanilla middle-scroll split only makes sense for 4K
+				if(ClientPrefs.data.middleScroll && DoubaoConfig.keyCount == 4)
 				{
 					babyArrow.x += 310;
 					if(i > 1) { //Up and Right
@@ -1811,8 +1831,8 @@ class PlayState extends MusicBeatState
 							var daNote:Note = notes.members[i];
 							if(daNote == null) continue;
 
-							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
-							if(!daNote.mustPress) strumGroup = opponentStrums;
+							// Doubao Engine: follow lane by ownership, not by mustPress (true for both sides in two-player)
+							var strumGroup:FlxTypedGroup<StrumNote> = daNote.isOpponent ? opponentStrums : playerStrums;
 
 							var strum:StrumNote = strumGroup.members[daNote.noteData];
 							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
@@ -1928,6 +1948,14 @@ class PlayState extends MusicBeatState
 					note.playAnim('static');
 					note.resetAnim = 0;
 				}
+			// Doubao Engine: reset P1 opponent strums too in two-player mode
+			if(DoubaoConfig.twoPlayer)
+				for (note in opponentStrums)
+					if(note.animation.curAnim != null && note.animation.curAnim.name != 'static')
+					{
+						note.playAnim('static');
+						note.resetAnim = 0;
+					}
 		}
 		openSubState(new PauseSubState());
 
@@ -2701,7 +2729,23 @@ class PlayState extends MusicBeatState
 			@:privateAccess if (!FlxG.keys._keyListMap.exists(eventKey)) return;
 			#end
 
-			if(FlxG.keys.checkStatus(eventKey, JUST_PRESSED)) keyPressed(key);
+			if(FlxG.keys.checkStatus(eventKey, JUST_PRESSED))
+			{
+				// Doubao Engine: fixed physical bindings for multi-key / two-player mode
+				if(DoubaoConfig.twoPlayer || DoubaoConfig.keyCount > 4)
+				{
+					final p2idx:Int = DoubaoConfig.getP2Index(eventKey);
+					if(p2idx >= 0) keyPressed(p2idx);
+
+					if(DoubaoConfig.twoPlayer)
+					{
+						final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
+						if(p1idx >= 0) keyPressedP1(p1idx);
+					}
+				}
+				else
+					keyPressed(key); // vanilla 4K single-player keeps rebindable controls
+			}
 		}
 	}
 
@@ -2719,7 +2763,7 @@ class PlayState extends MusicBeatState
 		// obtain notes that the player can hit
 		var plrInputNotes:Array<Note> = notes.members.filter(function(n:Note):Bool {
 			var canHit:Bool = n != null && !strumsBlocked[n.noteData] && n.canBeHit && n.mustPress && !n.tooLate && !n.wasGoodHit && !n.blockHit;
-			return canHit && !n.isSustainNote && n.noteData == key;
+			return canHit && !n.isOpponent && !n.isSustainNote && n.noteData == key;
 		});
 		plrInputNotes.sort(sortHitNotes);
 
@@ -2766,6 +2810,33 @@ class PlayState extends MusicBeatState
 		callOnScripts('onKeyPress', [key]);
 	}
 
+	// Doubao Engine: Player 1 controls the opponent Dad side (left) in two-player mode
+	private function keyPressedP1(key:Int)
+	{
+		if(cpuControlled || paused || inCutscene || key < 0 || key >= opponentStrums.length || !generatedMusic || endingSong) return;
+
+		var lastTime:Float = Conductor.songPosition;
+		if(Conductor.songPosition >= 0) Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
+
+		var p1Notes:Array<Note> = notes.members.filter(function(n:Note):Bool {
+			var canHit:Bool = n != null && n.canBeHit && n.mustPress && n.isOpponent && !n.tooLate && !n.wasGoodHit && !n.blockHit;
+			return canHit && !n.isSustainNote && n.noteData == key;
+		});
+		p1Notes.sort(sortHitNotes);
+
+		if(p1Notes.length != 0)
+			goodNoteHit(p1Notes[0]);
+
+		Conductor.songPosition = lastTime;
+
+		var sprP1:StrumNote = opponentStrums.members[key];
+		if(sprP1 != null && sprP1.animation.curAnim.name != 'confirm')
+		{
+			sprP1.playAnim('pressed');
+			sprP1.resetAnim = 0;
+		}
+	}
+
 	public static function sortHitNotes(a:Note, b:Note):Int
 	{
 		if (a.lowPriority && !b.lowPriority)
@@ -2779,6 +2850,21 @@ class PlayState extends MusicBeatState
 	private function onKeyRelease(event:KeyboardEvent):Void
 	{
 		var eventKey:FlxKey = event.keyCode;
+
+		// Doubao Engine: release routing for multi-key / two-player mode
+		if(DoubaoConfig.twoPlayer || DoubaoConfig.keyCount > 4)
+		{
+			if(controls.controllerMode) return;
+			final p2idx:Int = DoubaoConfig.getP2Index(eventKey);
+			if(p2idx >= 0) keyReleased(p2idx);
+			if(DoubaoConfig.twoPlayer)
+			{
+				final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
+				if(p1idx >= 0) keyReleasedP1(p1idx);
+			}
+			return;
+		}
+
 		var key:Int = getKeyFromEvent(keysArray, eventKey);
 		if(!controls.controllerMode && key > -1) keyReleased(key);
 	}
@@ -2797,6 +2883,19 @@ class PlayState extends MusicBeatState
 			spr.resetAnim = 0;
 		}
 		callOnScripts('onKeyRelease', [key]);
+	}
+
+	// Doubao Engine: Player 1 (opponent side) key release
+	private function keyReleasedP1(key:Int)
+	{
+		if(cpuControlled || !startedCountdown || paused || key < 0 || key >= opponentStrums.length) return;
+
+		var sprP1:StrumNote = opponentStrums.members[key];
+		if(sprP1 != null)
+		{
+			sprP1.playAnim('static');
+			sprP1.resetAnim = 0;
+		}
 	}
 
 	public static function getKeyFromEvent(arr:Array<String>, key:FlxKey):Int
@@ -2828,6 +2927,19 @@ class PlayState extends MusicBeatState
 			releaseArray.push(controls.justReleased(key));
 		}
 
+		// Doubao Engine: physical hold state per lane for multi-key / two-player mode
+		var useFixedKeys:Bool = DoubaoConfig.twoPlayer || DoubaoConfig.keyCount > 4;
+		var holdP2:Array<Bool> = [];
+		var holdP1:Array<Bool> = [];
+		if(useFixedKeys)
+		{
+			for (li in 0...DoubaoConfig.keyCount)
+			{
+				holdP2.push(FlxG.keys.anyPressed([DoubaoConfig.P2_KEYS[li]]));
+				holdP1.push(DoubaoConfig.twoPlayer && FlxG.keys.anyPressed([DoubaoConfig.P1_KEYS[li]]));
+			}
+		}
+
 		// TO DO: Find a better way to handle controller inputs, this should work for now
 		if(controls.controllerMode && pressArray.contains(true))
 			for (i in 0...pressArray.length)
@@ -2845,9 +2957,13 @@ class PlayState extends MusicBeatState
 						canHit = canHit && n.parent != null && n.parent.wasGoodHit;
 
 					if (canHit && n.isSustainNote) {
-						var released:Bool = !holdArray[n.noteData];
+						var isHeld:Bool = false;
+						if(useFixedKeys)
+							isHeld = n.isOpponent ? holdP1[n.noteData] : holdP2[n.noteData];
+						else
+							isHeld = holdArray[n.noteData];
 
-						if (!released)
+						if (isHeld)
 							goodNoteHit(n);
 					}
 				}
@@ -2952,7 +3068,7 @@ class PlayState extends MusicBeatState
 		RecalculateRating(true);
 
 		// play character anims
-		var char:Character = boyfriend;
+		var char:Character = (note != null && note.isOpponent) ? dad : boyfriend;
 		if((note != null && note.gfNote) || (SONG.notes[curSection] != null && SONG.notes[curSection].gfSection)) char = gf;
 
 		if(char != null && (note == null || !note.noMissAnimation) && char.hasMissAnimations)
@@ -3045,7 +3161,7 @@ class PlayState extends MusicBeatState
 			{
 				var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length-1, note.noteData)))] + note.animSuffix;
 
-				var char:Character = boyfriend;
+				var char:Character = note.isOpponent ? dad : boyfriend;
 				var animCheck:String = 'hey';
 				if(note.gfNote)
 				{
@@ -3080,10 +3196,12 @@ class PlayState extends MusicBeatState
 
 			if(!cpuControlled)
 			{
-				var spr = playerStrums.members[note.noteData];
+				// Doubao Engine: opponent notes light up the opponent strum line (P1)
+				var sprGroup:FlxTypedGroup<StrumNote> = note.isOpponent ? opponentStrums : playerStrums;
+				var spr = sprGroup.members[note.noteData];
 				if(spr != null) spr.playAnim('confirm', true);
 			}
-			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
+			else strumPlayAnim(note.isOpponent, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
 			vocals.volume = 1;
 
 			if (!note.isSustainNote)
@@ -3130,7 +3248,8 @@ class PlayState extends MusicBeatState
 
 	public function spawnNoteSplashOnNote(note:Note) {
 		if(note != null) {
-			var strum:StrumNote = playerStrums.members[note.noteData];
+			var splashGroup:FlxTypedGroup<StrumNote> = note.isOpponent ? opponentStrums : playerStrums;
+			var strum:StrumNote = splashGroup.members[note.noteData];
 			if(strum != null)
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note, strum);
 		}

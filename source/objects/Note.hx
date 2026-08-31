@@ -2,6 +2,7 @@ package objects;
 
 import backend.animation.PsychAnimationController;
 import backend.NoteTypesConfig;
+import backend.DoubaoConfig;
 
 import shaders.RGBPalette;
 import shaders.RGBPalette.RGBShaderReference;
@@ -89,6 +90,8 @@ class Note extends FlxSprite
 
 	public var animSuffix:String = '';
 	public var gfNote:Bool = false;
+	// Doubao Engine: true = opponent Dad note, false = boyfriend BF note
+	public var isOpponent:Bool = false;
 	public var earlyHitMult:Float = 1;
 	public var lateHitMult:Float = 1;
 	public var lowPriority:Bool = false;
@@ -173,10 +176,12 @@ class Note extends FlxSprite
 
 	public function defaultRGB()
 	{
-		var arr:Array<FlxColor> = ClientPrefs.data.arrowRGB[noteData];
-		if(PlayState.isPixelStage) arr = ClientPrefs.data.arrowRGBPixel[noteData];
+		// Doubao Engine: wrap color index for >4K lanes
+		var colorIdx:Int = noteData % 4;
+		var arr:Array<FlxColor> = ClientPrefs.data.arrowRGB[colorIdx];
+		if(PlayState.isPixelStage) arr = ClientPrefs.data.arrowRGBPixel[colorIdx];
 
-		if (arr != null && noteData > -1 && noteData <= arr.length)
+		if (arr != null && noteData > -1)
 		{
 			rgbShader.r = arr[0];
 			rgbShader.g = arr[1];
@@ -265,7 +270,7 @@ class Note extends FlxSprite
 			texture = '';
 
 			x += swagWidth * (noteData);
-			if(!isSustainNote && noteData < colArray.length) { //Doing this 'if' check to fix the warnings on Senpai songs
+			if(!isSustainNote) { //Doubao Engine: removed 4-lane limit so >4K lanes still animate
 				var animToPlay:String = '';
 				animToPlay = colArray[noteData % colArray.length];
 				animation.play(animToPlay + 'Scroll');
@@ -328,12 +333,13 @@ class Note extends FlxSprite
 
 	public static function initializeGlobalRGBShader(noteData:Int)
 	{
-		if(globalRgbShaders[noteData] == null)
+		final idx:Int = noteData % 4; // Doubao Engine: wrap for >4K
+		if(globalRgbShaders[idx] == null)
 		{
 			var newRGB:RGBPalette = new RGBPalette();
-			var arr:Array<FlxColor> = (!PlayState.isPixelStage) ? ClientPrefs.data.arrowRGB[noteData] : ClientPrefs.data.arrowRGBPixel[noteData];
-			
-			if (arr != null && noteData > -1 && noteData <= arr.length)
+			var arr:Array<FlxColor> = (!PlayState.isPixelStage) ? ClientPrefs.data.arrowRGB[idx] : ClientPrefs.data.arrowRGBPixel[idx];
+
+			if (arr != null && idx > -1)
 			{
 				newRGB.r = arr[0];
 				newRGB.g = arr[1];
@@ -345,10 +351,10 @@ class Note extends FlxSprite
 				newRGB.g = 0xFF00FF00;
 				newRGB.b = 0xFF0000FF;
 			}
-			
-			globalRgbShaders[noteData] = newRGB;
+
+			globalRgbShaders[idx] = newRGB;
 		}
-		return globalRgbShaders[noteData];
+		return globalRgbShaders[idx];
 	}
 
 	var _lastNoteOffX:Float = 0;
@@ -431,30 +437,35 @@ class Note extends FlxSprite
 	}
 
 	function loadNoteAnims() {
-		if (colArray[noteData] == null)
+		// Doubao Engine: wrap color lane for >4K
+		final col:String = colArray[noteData % colArray.length];
+		if (col == null)
 			return;
 
 		if (isSustainNote)
 		{
 			attemptToAddAnimationByPrefix('purpleholdend', 'pruple end hold', 24, true); // this fixes some retarded typo from the original note .FLA
-			animation.addByPrefix(colArray[noteData] + 'holdend', colArray[noteData] + ' hold end', 24, true);
-			animation.addByPrefix(colArray[noteData] + 'hold', colArray[noteData] + ' hold piece', 24, true);
+			animation.addByPrefix(col + 'holdend', col + ' hold end', 24, true);
+			animation.addByPrefix(col + 'hold', col + ' hold piece', 24, true);
 		}
-		else animation.addByPrefix(colArray[noteData] + 'Scroll', colArray[noteData] + '0');
+		else animation.addByPrefix(col + 'Scroll', col + '0');
 
-		setGraphicSize(Std.int(width * 0.7));
+		setGraphicSize(Std.int(width * 0.7 * DoubaoConfig.noteScale()));
 		updateHitbox();
 	}
 
 	function loadPixelNoteAnims() {
-		if (colArray[noteData] == null)
+		// Doubao Engine: wrap color lane / frame index for >4K
+		final col:String = colArray[noteData % colArray.length];
+		if (col == null)
 			return;
+		final px:Int = noteData % 4;
 
 		if(isSustainNote)
 		{
-			animation.add(colArray[noteData] + 'holdend', [noteData + 4], 24, true);
-			animation.add(colArray[noteData] + 'hold', [noteData], 24, true);
-		} else animation.add(colArray[noteData] + 'Scroll', [noteData + 4], 24, true);
+			animation.add(col + 'holdend', [px + 4], 24, true);
+			animation.add(col + 'hold', [px], 24, true);
+		} else animation.add(col + 'Scroll', [px + 4], 24, true);
 	}
 
 	function attemptToAddAnimationByPrefix(name:String, prefix:String, framerate:Float = 24, doLoop:Bool = true)
