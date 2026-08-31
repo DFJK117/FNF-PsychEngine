@@ -1391,6 +1391,8 @@ class PlayState extends MusicBeatState
 				swagNote.animSuffix = isAlt ? "-alt" : "";
 				swagNote.mustPress = gottaHitNote;
 				swagNote.isOpponent = isOpponentNote;
+				// Doubao Engine: P1 independent downscroll also flips opponent note art
+				if(DoubaoConfig.twoPlayer && isOpponentNote && ClientPrefs.data.doubaoP1DownScroll) swagNote.flipY = true;
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
 	
@@ -1412,6 +1414,8 @@ class PlayState extends MusicBeatState
 						sustainNote.gfNote = swagNote.gfNote;
 						sustainNote.noteType = swagNote.noteType;
 						sustainNote.scrollFactor.set();
+						// Doubao Engine: mirror P1 independent downscroll on sustain pieces
+						if(DoubaoConfig.twoPlayer && swagNote.isOpponent && ClientPrefs.data.doubaoP1DownScroll) sustainNote.flipY = true;
 						sustainNote.parent = swagNote;
 						unspawnNotes.push(sustainNote);
 						swagNote.tail.push(sustainNote);
