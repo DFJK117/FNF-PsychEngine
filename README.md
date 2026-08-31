@@ -1,9 +1,9 @@
 # 🎵 Doubao Engine（豆包引擎）
 
-> 基于 **Psych Engine** 深度优化的 Friday Night Funkin' 游戏引擎，专注性能、多键位与双人玩法。
+> 基于 **Psych Engine 1.0.4** 深度改造的 Friday Night Funkin' 游戏引擎，主打多键位、双人同键盘与完整中文体验。
 
 ![GitHub Workflow Status](https://github.com/DFJK117/FNF-PsychEngine/actions/workflows/main.yml/badge.svg)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Language](https://img.shields.io/badge/language-Haxe%20%2F%20Lua-orange)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
@@ -11,9 +11,7 @@
 
 ## 📖 引擎简介
 
-Doubao Engine（豆包引擎）是在开源引擎 [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) 基础上进行二次开发的 FNF 引擎。原始引擎最初用于 [Mind Games Mod](https://gamebanana.com/mods/301107)，旨在修复原版的大量问题，同时保持休闲游玩的体验，并为新手开发者提供更友好的模组编写方式。
-
-本引擎在此基础上进一步追求**极致性能**、**多键位支持**与**双人同键盘对战**，并提供完整的中文本地化。
+Doubao Engine（豆包引擎）在开源引擎 [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) 基础上二次开发，新增了**多 K 键位**、**双人同键盘对战**与**简体中文本地化**，并保留完整的 Psych Lua / HScript 模组 API。
 
 ---
 
@@ -21,16 +19,43 @@ Doubao Engine（豆包引擎）是在开源引擎 [Psych Engine](https://github.
 
 | 特性 | 说明 | 状态 |
 | :--- | :--- | :---: |
-| 🎮 双人键盘模式 | P1 操控对手（Dad），P2 操控 BF，各自独立按键与配色 | 🚧 开发中 |
-| 🎹 多 K 键位支持 | 4K / 5K / 6K / 7K / 9K 箭头，参考 Leather Engine | 🚧 开发中 |
-| 🔄 键位算法转换 | 4K↔多K 纯算法转换，多K转少K智能避让叠键 | 🚧 开发中 |
-| 🇨🇳 中文本地化 | 界面、选项、贴图全面中文化 | 🚧 开发中 |
-| ⚡ 性能优化 | 对象池、渲染优化、内存回收模拟 | 🚧 开发中 |
+| 🎮 双人键盘模式 | P1 操控左侧对手（Dad），P2 操控右侧 BF，独立判定线 | ✅ 已支持 |
+| 🎹 多 K 键位 | 4K / 5K / 6K / 7K / 8K / 9K，箭头自动缩小不拥挤 | ✅ 已支持 |
+| 🇨🇳 简体中文 | 界面、选项、提示完整中文化，默认中文 | ✅ 已支持 |
+| ⚡ 性能优化 | 箭头随键位缩放降低填充、击中即时销毁回收 | ✅ 已支持 |
 | 📜 Lua 脚本 | 完整保留 Psych Lua API，模组兼容 | ✅ 已支持 |
 | 🎬 视频过场 | 基于 hxvlc 的视频播放 | ✅ 已支持 |
-| 🎨 HScript | 热重载脚本支持 | ✅ 已支持 |
+| 🔄 谱面自动转键 | 4K↔多K 纯算法重映射、少K智能避让叠键 | 📋 规划中 |
+| 🎨 P1 独立配色 | 第二位玩家自定义箭头颜色 | 📋 规划中 |
 
 > ✅ 已可用　🚧 开发中　📋 规划中
+
+---
+
+## 🎮 键位说明
+
+### 单人 4K（与原版一致）
+
+`W A S D` 与 `方向键` 均可，支持在选项里自行改键。
+
+### 多 K / 双人模式（固定物理键位）
+
+| 轨道（从左到右） | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+| :--- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| **P1 对手（左）** | A | S | W | D | F | G | H | J | K |
+| **P2 BF（右）** | ← | ↓ | ↑ | → | Z | X | C | V | B |
+
+- **P1 = 左侧对手 Dad**，**P2 = 右侧 BF**，请勿搞反。
+- 键位数为 4K 时，前 4 个键正好对应经典布局。
+- 双人模式下 P1 可在选项里单独开启**下滚**。
+
+### 如何开启
+
+进入 `选项 → Gameplay Settings（玩法设置）`：
+
+- **Two Player Mode**：双人键盘开关
+- **Lane Count (4K-9K)**：每侧轨道数量，左右键调整，开局生效
+- **P1 Downscroll**：双人模式下 P1（对手侧）独立下滚
 
 ---
 
@@ -43,7 +68,7 @@ Doubao Engine（豆包引擎）是在开源引擎 [Psych Engine](https://github.
 3. 下载 `windowsBuild` 压缩包
 4. 解压后运行 `.exe` 即可
 
-> ⚠️ 需要登录 GitHub 账号才能下载 Actions 产物。
+> ⚠️ 需要登录 GitHub 账号才能下载 Actions 产物。本引擎仅提供 Windows 构建。
 
 ---
 
@@ -73,45 +98,15 @@ haxelib run lime build windows
 | hxdiscord_rpc | 1.2.4 |
 | hxvlc | 2.0.1 |
 
-更多细节见 [BUILDING.md](docs/BUILDING.md)。
-
 ---
 
-## 🎮 双人模式设计（规划）
+## 🧩 实现要点（开发者）
 
-- **玩家 1（左侧）**：操控对手 Dad，默认按键 `W A S D`
-- **玩家 2（右侧）**：操控 BF，默认按键 `方向键`
-- 开启双人模式后可选择是否关闭箭头居中
-- 每位玩家可独立调整：
-  - 按键颜色
-  - 上滚 / 下滚方向
-  - 判定偏移
-
----
-
-## 🎹 多 K 键位设计（规划）
-
-- 键位增多时箭头**自动等比缩小**，避免拥挤
-- 4K → 多K：算法自动分配箭头轨道
-- 多K → 4K：智能合并，尽量避免叠键
-- 参考 [Leather Engine](https://github.com/Leather128/LeatherEngine) 的多键箭头样式
-
----
-
-## 📁 目录结构
-
-```
-FNF-PsychEngine/
-├── source/            # 引擎源代码（Haxe）
-│   ├── states/        # 游戏状态
-│   ├── objects/       # 箭头、角色等对象
-│   ├── psychlua/      # Lua 脚本引擎
-│   └── options/       # 选项菜单
-├── assets/            # 游戏资源
-├── mods/              # 模组目录
-├── setup/             # 环境安装脚本
-└── Project.xml        # 编译配置
-```
+- `source/backend/DoubaoConfig.hx`：集中管理键位数、双人开关、轨道间距/箭头缩放、P1/P2 物理键位。
+- 谱面加载（`Song.hx`）与音符生成（`PlayState.hx`）的轨道归属由固定 4 改为动态键位数。
+- 颜色 / 动画 / 贴图帧索引统一按 `% 4` 循环，多 K 轨道复用四色箭头。
+- 双人模式下双方音符均为手动判定，靠 `Note.isOpponent` 区分归属与判定线。
+- 中文走 `assets/translations/shared/data/zh-CN.lang`，Windows 下字体自动回退到微软雅黑。
 
 ---
 
