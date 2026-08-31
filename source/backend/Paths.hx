@@ -293,11 +293,6 @@ class Paths
 	inline static public function font(key:String)
 	{
 		var folderKey:String = Language.getFileTranslation('fonts/$key');
-		// Doubao Engine: render Chinese with a CJK-capable system font on Windows
-		#if windows
-		if(ClientPrefs.data != null && ClientPrefs.data.language == 'zh-CN')
-			return 'Microsoft YaHei';
-		#end
 		#if MODS_ALLOWED
 		var file:String = modFolders(folderKey);
 		if(FileSystem.exists(file)) return file;

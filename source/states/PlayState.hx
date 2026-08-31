@@ -1540,7 +1540,8 @@ class PlayState extends MusicBeatState
 	public var skipArrowStartTween:Bool = false; //for lua
 	private function generateStaticArrows(player:Int):Void
 	{
-		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
+		// Doubao Engine: two-player mode forces the split layout (no middle scroll centering)
+		var strumLineX:Float = (ClientPrefs.data.middleScroll && !DoubaoConfig.twoPlayer) ? STRUM_X_MIDDLESCROLL : STRUM_X;
 		// Doubao Engine: Player 1 (opponent) can have its own scroll direction, including receptor Y
 		var p1Down:Bool = (DoubaoConfig.twoPlayer && player < 1) ? ClientPrefs.data.doubaoP1DownScroll : ClientPrefs.data.downScroll;
 		var strumLineY:Float = p1Down ? (FlxG.height - 150) : 50;
@@ -2731,16 +2732,19 @@ class PlayState extends MusicBeatState
 			if(FlxG.keys.checkStatus(eventKey, JUST_PRESSED))
 			{
 				// Doubao Engine: fixed physical bindings for multi-key / two-player mode
-				if(DoubaoConfig.twoPlayer || DoubaoConfig.keyCount > 4)
+				if(DoubaoConfig.twoPlayer)
 				{
+					// P2 (arrows + ZXCVB) controls BF, P1 (WASD + FGHJK) controls opponent Dad
 					final p2idx:Int = DoubaoConfig.getP2Index(eventKey);
 					if(p2idx >= 0) keyPressed(p2idx);
-
-					if(DoubaoConfig.twoPlayer)
-					{
-						final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
-						if(p1idx >= 0) keyPressedP1(p1idx);
-					}
+					final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
+					if(p1idx >= 0) keyPressedP1(p1idx);
+				}
+				else if(DoubaoConfig.keyCount > 4)
+				{
+					// multi-K solo uses left-hand WASD + FGHJK
+					final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
+					if(p1idx >= 0) keyPressed(p1idx);
 				}
 				else
 					keyPressed(key); // vanilla 4K single-player keeps rebindable controls
@@ -2851,16 +2855,20 @@ class PlayState extends MusicBeatState
 		var eventKey:FlxKey = event.keyCode;
 
 		// Doubao Engine: release routing for multi-key / two-player mode
-		if(DoubaoConfig.twoPlayer || DoubaoConfig.keyCount > 4)
+		if(DoubaoConfig.twoPlayer)
 		{
 			if(controls.controllerMode) return;
 			final p2idx:Int = DoubaoConfig.getP2Index(eventKey);
 			if(p2idx >= 0) keyReleased(p2idx);
-			if(DoubaoConfig.twoPlayer)
-			{
-				final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
-				if(p1idx >= 0) keyReleasedP1(p1idx);
-			}
+			final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
+			if(p1idx >= 0) keyReleasedP1(p1idx);
+			return;
+		}
+		if(DoubaoConfig.keyCount > 4)
+		{
+			if(controls.controllerMode) return;
+			final p1idx:Int = DoubaoConfig.getP1Index(eventKey);
+			if(p1idx >= 0) keyReleased(p1idx);
 			return;
 		}
 
@@ -2958,7 +2966,12 @@ class PlayState extends MusicBeatState
 					if (canHit && n.isSustainNote) {
 						var isHeld:Bool = false;
 						if(useFixedKeys)
-							isHeld = n.isOpponent ? holdP1[n.noteData] : holdP2[n.noteData];
+						{
+							if(DoubaoConfig.twoPlayer)
+								isHeld = n.isOpponent ? holdP1[n.noteData] : holdP2[n.noteData];
+							else
+								isHeld = holdP1[n.noteData]; // multi-K solo: left-hand WASD+FGHJK
+						}
 						else
 							isHeld = holdArray[n.noteData];
 

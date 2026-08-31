@@ -76,7 +76,7 @@ import states.TitleState;
 	public var guitarHeroSustains:Bool = true;
 	public var discordRPC:Bool = true;
 	public var loadingScreen:Bool = true;
-	public var language:String = 'zh-CN';
+	public var language:String = 'en-US';
 
 	// Doubao Engine: multi-key lanes (4/5/6/7/9) and two-player keyboard mode
 	public var doubaoKeys:Int = 4;
