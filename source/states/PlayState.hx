@@ -1541,7 +1541,9 @@ class PlayState extends MusicBeatState
 	private function generateStaticArrows(player:Int):Void
 	{
 		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
-		var strumLineY:Float = ClientPrefs.data.downScroll ? (FlxG.height - 150) : 50;
+		// Doubao Engine: Player 1 (opponent) can have its own scroll direction, including receptor Y
+		var p1Down:Bool = (DoubaoConfig.twoPlayer && player < 1) ? ClientPrefs.data.doubaoP1DownScroll : ClientPrefs.data.downScroll;
+		var strumLineY:Float = p1Down ? (FlxG.height - 150) : 50;
 		for (i in 0...DoubaoConfig.keyCount)
 		{
 			// FlxG.log.add(i);
@@ -1555,10 +1557,7 @@ class PlayState extends MusicBeatState
 			}
 
 			var babyArrow:StrumNote = new StrumNote(strumLineX, strumLineY, i, player);
-			babyArrow.downScroll = ClientPrefs.data.downScroll;
-			// Doubao Engine: in two-player mode P1 (opponent) can use its own scroll direction
-			if(DoubaoConfig.twoPlayer && player < 1 && ClientPrefs.data.doubaoP1DownScroll)
-				babyArrow.downScroll = true;
+			babyArrow.downScroll = p1Down;
 			if (!isStoryMode && !skipArrowStartTween)
 			{
 				//babyArrow.y -= 10;

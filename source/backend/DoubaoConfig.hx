@@ -82,7 +82,7 @@ class DoubaoConfig
 	/** Physical key -> Player 1 lane index (-1 if not a P1 key) */
 	public static function getP1Index(k:FlxKey):Int
 	{
-		var n:Int = Math.min(keyCount, P1_KEYS.length);
+		var n:Int = (keyCount < P1_KEYS.length) ? keyCount : P1_KEYS.length;
 		for (i in 0...n)
 			if (P1_KEYS[i] == k) return i;
 		return -1;
@@ -91,7 +91,7 @@ class DoubaoConfig
 	/** Physical key -> Player 2 lane index (-1 if not a P2 key) */
 	public static function getP2Index(k:FlxKey):Int
 	{
-		var n:Int = Math.min(keyCount, P2_KEYS.length);
+		var n:Int = (keyCount < P2_KEYS.length) ? keyCount : P2_KEYS.length;
 		for (i in 0...n)
 			if (P2_KEYS[i] == k) return i;
 		return -1;
