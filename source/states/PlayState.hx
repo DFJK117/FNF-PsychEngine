@@ -1391,8 +1391,9 @@ class PlayState extends MusicBeatState
 				swagNote.animSuffix = isAlt ? "-alt" : "";
 				swagNote.mustPress = gottaHitNote;
 				swagNote.isOpponent = isOpponentNote;
-				// Doubao Engine: P1 independent downscroll also flips opponent note art
-				if(DoubaoConfig.twoPlayer && isOpponentNote && ClientPrefs.data.doubaoP1DownScroll) swagNote.flipY = true;
+				// Doubao Engine: do NOT flipY normal notes for P1 independent downscroll
+				// (that flipped the up/down arrow art). Scroll direction is handled by
+				// followStrumNote via the receptor's downScroll flag. Only sustain tails flip.
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
 	
