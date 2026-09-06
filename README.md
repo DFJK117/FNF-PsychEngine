@@ -124,3 +124,5 @@ haxelib run lime build windows
 本项目遵循 [Apache License 2.0](LICENSE) 开源协议。
 
 Friday Night Funkin' 原版由 [The Funkin' Crew](https://ninja-muffin24.itch.io/funkin) 制作。
+bilibili:1923565971,京葉Viii，本文档为AI生成，（这个是我打的：（
+878787878
