@@ -1440,8 +1440,10 @@ class PlayState extends MusicBeatState
 							oldNote.resizeByRatio(curStepCrochet / Conductor.stepCrochet);
 						}
 
-						if (sustainNote.mustPress) sustainNote.x += FlxG.width / 2; // general offset
-						else if(ClientPrefs.data.middleScroll)
+						// Doubao Engine: ownership-based side (same fix as normal notes)
+						var sustainGoesRight:Bool = DoubaoConfig.twoPlayer ? !swagNote.isOpponent : sustainNote.mustPress;
+						if (sustainGoesRight) sustainNote.x += FlxG.width / 2; // general offset
+						else if(!DoubaoConfig.twoPlayer && ClientPrefs.data.middleScroll)
 						{
 							sustainNote.x += 310;
 							if(noteColumn > 1) //Up and Right
@@ -1450,11 +1452,15 @@ class PlayState extends MusicBeatState
 					}
 				}
 
-				if (swagNote.mustPress)
+				// Doubao Engine: track side is ownership-based (Dad = left, BF = right).
+				// In two-player mode mustPress is true for BOTH sides, so the vanilla
+				// mustPress test wrongly pushed Dad notes onto the BF lane (P1 couldn't hit).
+				var noteGoesRight:Bool = DoubaoConfig.twoPlayer ? !isOpponentNote : swagNote.mustPress;
+				if (noteGoesRight)
 				{
 					swagNote.x += FlxG.width / 2; // general offset
 				}
-				else if(ClientPrefs.data.middleScroll)
+				else if(!DoubaoConfig.twoPlayer && ClientPrefs.data.middleScroll)
 				{
 					swagNote.x += 310;
 					if(noteColumn > 1) //Up and Right
@@ -3004,7 +3010,7 @@ class PlayState extends MusicBeatState
 	function noteMiss(daNote:Note):Void { //You didn't hit the key and let it go offscreen, also used by Hurt Notes
 		//Dupe note remove
 		notes.forEachAlive(function(note:Note) {
-			if (daNote != note && daNote.mustPress && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1)
+			if (daNote != note && daNote.mustPress && daNote.isOpponent == note.isOpponent && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1)
 				invalidateNote(note);
 		});
 
