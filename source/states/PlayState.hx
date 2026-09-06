@@ -1575,8 +1575,8 @@ class PlayState extends MusicBeatState
 				playerStrums.add(babyArrow);
 			else
 			{
-				// vanilla middle-scroll split only makes sense for 4K
-				if(ClientPrefs.data.middleScroll && DoubaoConfig.keyCount == 4)
+				// vanilla middle-scroll split only makes sense for 4K; two-player forces full split layout
+				if(ClientPrefs.data.middleScroll && DoubaoConfig.keyCount == 4 && !DoubaoConfig.twoPlayer)
 				{
 					babyArrow.x += 310;
 					if(i > 1) { //Up and Right
