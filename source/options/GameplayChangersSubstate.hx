@@ -2,6 +2,8 @@ package options;
 
 import objects.AttachedText;
 import objects.CheckboxThingie;
+import backend.ClientPrefs;
+import backend.DoubaoConfig;
 
 import options.Option.OptionType;
 
@@ -19,6 +21,37 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 
 	function getOptions()
 	{
+		// ===== Doubao Engine: lane count / two-player, listed first (this menu opens with CTRL in Freeplay) =====
+		var dbLanes:GameplayOption = new GameplayOption('Lane Count (4K-9K)', 'doubaoKeys', INT, ClientPrefs.data.doubaoKeys);
+		dbLanes.displayFormat = '%vK';
+		dbLanes.minValue = 4;
+		dbLanes.maxValue = 9;
+		dbLanes.changeValue = 1;
+		dbLanes.customGet = function() return ClientPrefs.data.doubaoKeys;
+		dbLanes.customSet = function(v)
+		{
+			ClientPrefs.data.doubaoKeys = Std.int(v);
+			if (ClientPrefs.data.doubaoKeys > 4) ClientPrefs.data.doubaoTwoPlayer = false; // 5K+ is strictly solo
+			DoubaoConfig.syncFromPrefs();
+		};
+		optionsArray.push(dbLanes);
+
+		var dbTwo:GameplayOption = new GameplayOption('Two Player (4K only)', 'doubaoTwoPlayer', BOOL, ClientPrefs.data.doubaoTwoPlayer);
+		dbTwo.customGet = function() return ClientPrefs.data.doubaoTwoPlayer;
+		dbTwo.customSet = function(v)
+		{
+			ClientPrefs.data.doubaoTwoPlayer = v;
+			if (v) ClientPrefs.data.doubaoKeys = 4; // two-player is 4K only
+			DoubaoConfig.syncFromPrefs();
+		};
+		optionsArray.push(dbTwo);
+
+		var dbP1:GameplayOption = new GameplayOption('P1 Downscroll', 'doubaoP1DownScroll', BOOL, ClientPrefs.data.doubaoP1DownScroll);
+		dbP1.customGet = function() return ClientPrefs.data.doubaoP1DownScroll;
+		dbP1.customSet = function(v) ClientPrefs.data.doubaoP1DownScroll = v;
+		optionsArray.push(dbP1);
+		// ===== End Doubao Engine options =====
+
 		var goption:GameplayOption = new GameplayOption('Scroll Type', 'scrolltype', STRING, 'multiplicative', ["multiplicative", "constant"]);
 		optionsArray.push(goption);
 
@@ -353,6 +386,9 @@ class GameplayOption
 	private var child:Alphabet;
 	public var text(get, set):String;
 	public var onChange:Void->Void = null; //Pressed enter (on Bool type options) or pressed/held left/right (on other types)
+	// Doubao Engine: when set, value is read/written through these instead of the gameplaySettings map
+	public var customGet:Void->Dynamic = null;
+	public var customSet:Dynamic->Void = null;
 	public var type:OptionType = BOOL;
 
 	public var showBoyfriend:Bool = false;
@@ -429,10 +465,16 @@ class GameplayOption
 	}
 
 	public function getValue():Dynamic
+	{
+		if (customGet != null) return customGet();
 		return ClientPrefs.data.gameplaySettings.get(variable);
+	}
 
 	public function setValue(value:Dynamic)
+	{
+		if (customSet != null) { customSet(value); return; }
 		ClientPrefs.data.gameplaySettings.set(variable, value);
+	}
 
 	public function setChild(child:Alphabet)
 		this.child = child;

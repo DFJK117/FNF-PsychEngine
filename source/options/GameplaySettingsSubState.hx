@@ -7,32 +7,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		title = Language.getPhrase('gameplay_menu', 'Gameplay Settings');
 		rpcTitle = 'Gameplay Settings Menu'; //for Discord Rich Presence
 
-		// ===== Doubao Engine options =====
-		var dbOption:Option = new Option('Two Player Mode (4K only)',
-			'Only available at 4K. P1 (A S W D) is the opponent on the left,\nP2 (Arrow Keys) is BF on the right. Any 5K+ chart is strictly solo.',
-			'doubaoTwoPlayer',
-			BOOL);
-		dbOption.onChange = onChangeTwoPlayer;
-		addOption(dbOption);
-
-		dbOption = new Option('Lane Count (4K-9K, solo)',
-			'Solo centered lanes. 5K=D F Space G K, 6K=S D F J K L,\n9K=A S D F Space H J K L. Above 4K forces solo. Arrows auto-shrink.',
-			'doubaoKeys',
-			INT);
-		dbOption.displayFormat = '%vK';
-		dbOption.scrollSpeed = 1;
-		dbOption.minValue = 4;
-		dbOption.maxValue = 9;
-		dbOption.changeValue = 1;
-		dbOption.onChange = onChangeLaneCount;
-		addOption(dbOption);
-
-		dbOption = new Option('P1 Downscroll',
-			'In two-player 4K mode, makes Player 1 (opponent/left)\nscroll down independently from Player 2.',
-			'doubaoP1DownScroll',
-			BOOL);
-		addOption(dbOption);
-		// ===== End Doubao Engine options =====
+		// Doubao Engine: lane count / two-player moved to the Freeplay CTRL menu (GameplayChangersSubstate)
 
 		//I'd suggest using "Downscroll" as an example for making your own option since it is the simplest here
 		var option:Option = new Option('Downscroll', //Name
@@ -151,19 +126,4 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 
 	function onChangeAutoPause()
 		FlxG.autoPause = ClientPrefs.data.autoPause;
-
-	// Doubao Engine: keep multi-K (solo) and two-player mutually exclusive
-	function onChangeLaneCount()
-	{
-		if(backend.ClientPrefs.data.doubaoKeys > 4)
-			backend.ClientPrefs.data.doubaoTwoPlayer = false;
-		backend.DoubaoConfig.syncFromPrefs();
-	}
-
-	function onChangeTwoPlayer()
-	{
-		if(backend.ClientPrefs.data.doubaoTwoPlayer)
-			backend.ClientPrefs.data.doubaoKeys = 4; // two-player is 4K only
-		backend.DoubaoConfig.syncFromPrefs();
-	}
 }
