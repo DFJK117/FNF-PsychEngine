@@ -80,6 +80,8 @@ import states.TitleState;
 
 	// Doubao Engine: multi-key lanes (4/5/6/7/9) and two-player keyboard mode
 	public var doubaoKeys:Int = 4;
+	// When true, lane count is auto-detected from the chart; only a manual override fixes it
+	public var doubaoKeysAuto:Bool = true;
 	public var doubaoTwoPlayer:Bool = false;
 	// Player 1 (opponent) independent scroll direction in two-player mode
 	public var doubaoP1DownScroll:Bool = false;
@@ -110,7 +112,17 @@ class ClientPrefs {
 		'volume_mute'	=> [ZERO],
 		'volume_up'		=> [NUMPADPLUS, PLUS],
 		'volume_down'	=> [NUMPADMINUS, MINUS],
-		
+
+		// Doubao Engine: rebindable two-player lanes. P1 = opponent/Dad (left), P2 = BF (right)
+		'doubao_p1_left'	=> [A],
+		'doubao_p1_down'	=> [S],
+		'doubao_p1_up'		=> [W],
+		'doubao_p1_right'	=> [D],
+		'doubao_p2_left'	=> [LEFT],
+		'doubao_p2_down'	=> [DOWN],
+		'doubao_p2_up'		=> [UP],
+		'doubao_p2_right'	=> [RIGHT],
+
 		'debug_1'		=> [SEVEN],
 		'debug_2'		=> [EIGHT]
 	];

@@ -22,18 +22,26 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 	function getOptions()
 	{
 		// ===== Doubao Engine: lane count / two-player, listed first (this menu opens with CTRL in Freeplay) =====
-		var dbLanes:GameplayOption = new GameplayOption('Lane Count (4K-9K)', 'doubaoKeys', INT, ClientPrefs.data.doubaoKeys);
-		dbLanes.displayFormat = '%vK';
-		dbLanes.minValue = 4;
-		dbLanes.maxValue = 9;
-		dbLanes.changeValue = 1;
-		dbLanes.customGet = function() return ClientPrefs.data.doubaoKeys;
+		// AUTO = follow whatever K-count the chart uses; picking a fixed 4K..9K overrides it
+		var laneLabels:Array<String> = ['AUTO', '4K', '5K', '6K', '7K', '8K', '9K'];
+		var dbLanes:GameplayOption = new GameplayOption('Lane Count', 'doubaoLaneMode', STRING, 'AUTO', laneLabels);
+		dbLanes.customGet = function() return ClientPrefs.data.doubaoKeysAuto ? 'AUTO' : (Std.string(ClientPrefs.data.doubaoKeys) + 'K');
 		dbLanes.customSet = function(v)
 		{
-			ClientPrefs.data.doubaoKeys = Std.int(v);
-			if (ClientPrefs.data.doubaoKeys > 4) ClientPrefs.data.doubaoTwoPlayer = false; // 5K+ is strictly solo
+			var s:String = v;
+			if (s == 'AUTO')
+			{
+				ClientPrefs.data.doubaoKeysAuto = true;
+			}
+			else
+			{
+				ClientPrefs.data.doubaoKeysAuto = false;
+				ClientPrefs.data.doubaoKeys = Std.parseInt(s.split('K')[0]);
+				if (ClientPrefs.data.doubaoKeys > 4) ClientPrefs.data.doubaoTwoPlayer = false; // 5K+ is strictly solo
+			}
 			DoubaoConfig.syncFromPrefs();
 		};
+		dbLanes.curOption = laneLabels.indexOf(dbLanes.getValue());
 		optionsArray.push(dbLanes);
 
 		var dbTwo:GameplayOption = new GameplayOption('Two Player (4K only)', 'doubaoTwoPlayer', BOOL, ClientPrefs.data.doubaoTwoPlayer);
@@ -41,7 +49,18 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		dbTwo.customSet = function(v)
 		{
 			ClientPrefs.data.doubaoTwoPlayer = v;
-			if (v) ClientPrefs.data.doubaoKeys = 4; // two-player is 4K only
+			if (v)
+			{
+				// two-player is 4K only: leave AUTO and pin the lane count to 4K
+				ClientPrefs.data.doubaoKeysAuto = false;
+				ClientPrefs.data.doubaoKeys = 4;
+				var laneOpt:GameplayOption = getOptionByName('Lane Count');
+				if (laneOpt != null)
+				{
+					laneOpt.curOption = laneLabels.indexOf('4K');
+					updateTextFrom(laneOpt);
+				}
+			}
 			DoubaoConfig.syncFromPrefs();
 		};
 		optionsArray.push(dbTwo);

@@ -99,6 +99,9 @@ class Song
 		var sectionsData:Array<SwagSection> = songJson.notes;
 		if(sectionsData == null) return;
 
+		// Doubao Engine: in auto mode, infer lane count from raw note columns before normalizing
+		DoubaoConfig.applyDetectedKeyCount(sectionsData);
+
 		for (section in sectionsData)
 		{
 			var beats:Null<Float> = cast section.sectionBeats;

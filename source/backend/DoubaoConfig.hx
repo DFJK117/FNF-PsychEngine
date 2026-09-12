@@ -25,6 +25,8 @@ class DoubaoConfig
 
 	/** Lanes per side/row, synced from ClientPrefs.doubaoKeys */
 	public static var keyCount:Int = 4;
+	/** When true, keyCount is detected from the chart's raw note columns instead of the manual pref */
+	public static var autoKeys:Bool = true;
 	/** Raw two-player preference; only honored at 4K */
 	public static var twoPlayer:Bool = false;
 
@@ -45,10 +47,24 @@ class DoubaoConfig
 		[A, S, D, F, SPACE, H, J, K, L]     // 9
 	];
 
-	/** Two-player 4K: Player 1 (opponent Dad, left): A S W D = left/down/up/right */
+	/** Two-player 4K: Player 1 (opponent Dad, left); defaults A S W D, rebindable via ClientPrefs.keyBinds */
 	public static var P1_KEYS:Array<FlxKey> = [A, S, W, D];
-	/** Two-player 4K: Player 2 (boyfriend BF, right): arrow keys */
+	/** Two-player 4K: Player 2 (boyfriend BF, right); defaults arrow keys, rebindable via ClientPrefs.keyBinds */
 	public static var P2_KEYS:Array<FlxKey> = [LEFT, DOWN, UP, RIGHT];
+
+	static function firstBind(name:String, fallback:FlxKey):FlxKey
+	{
+		var a:Array<FlxKey> = ClientPrefs.keyBinds.get(name);
+		if (a != null && a.length > 0) return a[0];
+		return fallback;
+	}
+
+	/** Reload P1/P2 physical keys from the rebindable keyBinds map */
+	public static function refreshPlayerKeys():Void
+	{
+		P1_KEYS = [firstBind('doubao_p1_left', A), firstBind('doubao_p1_down', S), firstBind('doubao_p1_up', W), firstBind('doubao_p1_right', D)];
+		P2_KEYS = [firstBind('doubao_p2_left', LEFT), firstBind('doubao_p2_down', DOWN), firstBind('doubao_p2_up', UP), firstBind('doubao_p2_right', RIGHT)];
+	}
 
 	/**
 	 * Display direction per lane, indexed by lane count then lane index.
@@ -71,9 +87,54 @@ class DoubaoConfig
 	/** Sync settings from ClientPrefs, called once when a song starts */
 	public static function syncFromPrefs():Void
 	{
-		keyCount = Std.int(FlxMath.bound(ClientPrefs.data.doubaoKeys, 4, MAX_KEYS));
+		autoKeys = ClientPrefs.data.doubaoKeysAuto;
+		if (autoKeys)
+		{
+			// Keep whatever the chart scan already detected (applyDetectedKeyCount runs when the chart loads, before PlayState.create).
+			// On a fresh launch with no chart loaded yet it stays at the static default of 4.
+			if (keyCount < 4 || keyCount > MAX_KEYS) keyCount = 4;
+		}
+		else
+		{
+			keyCount = Std.int(FlxMath.bound(ClientPrefs.data.doubaoKeys, 4, MAX_KEYS));
+		}
 		// Two-player is only valid at 4K; any multi-key chart is strictly solo.
 		twoPlayer = ClientPrefs.data.doubaoTwoPlayer && keyCount == 4;
+		refreshPlayerKeys();
+	}
+
+	/**
+	 * Scan a chart's RAW note columns (before Psych normalization) and infer its
+	 * lane count. Charts encode the two ownership halves back-to-back, so a k-lane
+	 * chart spans raw columns 0..(2k-1); e.g. vanilla 4K maxes at 7 -> k = 4.
+	 * Only used when autoKeys is on. Returns the resulting (also stored) keyCount.
+	 */
+	public static function applyDetectedKeyCount(sectionsData:Dynamic):Int
+	{
+		if (!autoKeys) return keyCount;
+		var maxRaw:Int = 3; // floor: vanilla chart always at least uses 0..3
+		var sections:Array<Dynamic> = cast sectionsData;
+		if (sections == null) return keyCount;
+		for (section in sections)
+		{
+			if (section == null) continue;
+			var noteList:Array<Dynamic> = cast section.sectionNotes;
+			if (noteList == null) continue;
+			for (sn in noteList)
+			{
+				var col:Dynamic = sn[1];
+				// JSON numbers decode as Float; event notes may be arrays/strings and are skipped
+				if (Std.isOfType(col, Float) || Std.isOfType(col, Int))
+				{
+					var c:Int = Std.int(col);
+					if (c > maxRaw) maxRaw = c;
+				}
+			}
+		}
+		var detected:Int = Std.int(Math.ceil((maxRaw + 1) / 2));
+		keyCount = Std.int(FlxMath.bound(detected, 4, MAX_KEYS));
+		twoPlayer = ClientPrefs.data.doubaoTwoPlayer && keyCount == 4;
+		return keyCount;
 	}
 
 	/** Whether two-player split layout is actually active */

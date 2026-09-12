@@ -3118,7 +3118,9 @@ class PlayState extends MusicBeatState
 		var lastCombo:Int = combo;
 		combo = 0;
 
-		health -= subtract * healthLoss;
+		// Doubao Engine: in two-player, a missed opponent note is P1's mistake, so it pushes the bar TOWARD BF instead
+		var missDir:Float = (note != null && DoubaoConfig.isTwoPlayer() && note.isOpponent) ? 1 : -1;
+		health += subtract * healthLoss * missDir;
 		songScore -= 10;
 		if(!endingSong) songMisses++;
 		totalPlayed++;
@@ -3269,7 +3271,9 @@ class PlayState extends MusicBeatState
 			}
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
-			if (gainHealth) health += note.hitHealth * healthGain;
+			// Doubao Engine: in two-player, P1 controls the opponent (Dad) side, so its hits push the bar TOWARD Dad (away from BF)
+			var healthDir:Float = (DoubaoConfig.isTwoPlayer() && note.isOpponent) ? -1 : 1;
+			if (gainHealth) health += note.hitHealth * healthGain * healthDir;
 
 		}
 		else //Notes that count as a miss if you hit them (Hurt notes for example)
