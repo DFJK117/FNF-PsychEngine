@@ -1,3 +1,31 @@
+# 🎤 Doubao Engine（豆包引擎）
+
+基于 **Psych Engine 1.0.4（Friday Night Funkin' 0.2.8）** 二次开发的中文向优化分支，原版 Lua 模组 API 完整保留，可直接加载现有 Psych 模组。
+
+## ⬇️ 直接下载（免登录）
+**[DoubaoEngine-v0.1-Windows.zip（Windows x64，解压即玩）](https://github.com/DFJK117/FNF-PsychEngine/releases/download/doubao-v0.1/DoubaoEngine-v0.1-Windows.zip)**
+
+> 解压后运行 `PsychEngine.exe`，无需安装、无需配置环境。
+
+## ✨ 特性
+- **局域网 P2P 双人联机**：主菜单新增「局域网联机」入口，同一 Wi‑Fi/路由器下两台电脑即可合奏，无需服务器；开局 READY/GO 自动对齐，两侧实时显示双方名字 / COMBO / MISS / 准度。房主打对手侧，加入方打 BF 侧。
+- **多 K（4K–9K）**：默认 AUTO 自动识别谱面键数，箭头多时自动缩小；也可在选歌页 `CTRL` → Gameplay Changers 手动固定。
+  - 5K `D F 空格 G K`｜6K `S D F J K L`｜7K `S D F 空格 J K L`｜8K `A S D F H J K L`｜9K `A S D F 空格 H J K L`
+- **单机双人 + P1/P2 独立改键**：P1（对手侧，默认 `A S W D`）、P2（BF 侧，默认方向键）可分别重绑；修复 P1 打歌却推 BF 血条的方向问题。
+- 性能优化、字体与贴图完整不缺字。界面以英文为主，仅主菜单联机入口为中文贴图。
+
+## 🛜 局域网联机步骤
+1. **房主**：主菜单 →「局域网联机」→ `HOST ROOM`，把房间页显示的 IPv4 告诉队友，队友进入后按 ENTER 选歌开始。
+2. **加入方**：`JOIN ROOM` → 输入房主 IPv4 → ENTER，自动进房，房主选歌后自动同步进入同一首歌。
+3. 若房主显示 `127.0.0.1`，请在房主电脑运行 `ipconfig` 查真实 IPv4；首次建房 Windows 防火墙请点「允许」；同机自测输入 `127.0.0.1`。
+
+## 🔧 从源码编译
+见 [docs/BUILDING.md](docs/BUILDING.md)；仓库已配置 GitHub Actions（`.github/workflows/main.yml`），push 到 `main` 即自动在云端构建 Windows 版并产出 Artifact。
+
+---
+
+# 原 Psych Engine 说明（上游）
+
 ![PsychionalEngineLogo](docs/img/PsychEngineLogoTweak.png)
 
 Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
