@@ -55,10 +55,10 @@ class LanNet
 	{
 		try
 		{
-			var h:Host = Host.localHost();
-			if (h != null && h.ip() != null)
+			var h:Host = Host.localhost();
+			if (h != null && h.ip != null)
 			{
-				var s:String = Std.string(h.ip());
+				var s:String = Std.string(h.ip);
 				if (s.length > 0 && s != '0.0.0.0') return s;
 			}
 		}
@@ -170,7 +170,7 @@ class LanNet
 		var out:Array<String> = [];
 		mtx.acquire();
 		for (m in inbound) out.push(m);
-		inbound.clear();
+		inbound = [];
 		mtx.release();
 		return out;
 	}
@@ -221,7 +221,7 @@ class LanNet
 		conn = null;
 		listener = null;
 		mtx.acquire();
-		inbound.clear();
+		inbound = [];
 		mtx.release();
 		mode = NONE;
 	}

@@ -5,6 +5,8 @@ import flixel.FlxSprite;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import backend.ClientPrefs;
+import backend.Song;
+import backend.Highscore;
 import backend.net.LanNet;
 
 /**
@@ -239,6 +241,25 @@ class LanLobbyState extends MusicBeatState
 					LanNet.peerName = LanNet.field(msg, 'name', 'PEER'); changed = true;
 				case 'FULL':
 					errorMsg = 'ROOM IS FULL'; changed = true;
+				case 'SONG':
+					// client follows the host into the same song/difficulty
+					var sg:String = LanNet.field(msg, 's', '');
+					var df:Int = Std.parseInt(LanNet.field(msg, 'd', '0')) ?? 0;
+					if (sg.length > 0)
+					{
+						try
+						{
+							Song.loadFromJson(Highscore.formatSong(sg, df), sg);
+							PlayState.isStoryMode = false;
+							PlayState.storyDifficulty = df;
+							ClientPrefs.data.lanEnabled = true;
+							ClientPrefs.data.doubaoTwoPlayer = true;
+							backend.DoubaoConfig.syncFromPrefs();
+							LoadingState.prepareToSong();
+							LoadingState.loadAndSwitchState(new PlayState());
+						}
+						catch (se:Dynamic) { errorMsg = 'CANNOT LOAD SONG ' + sg; changed = true; }
+					}
 				default:
 			}
 		}

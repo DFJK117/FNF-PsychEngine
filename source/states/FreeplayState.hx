@@ -442,6 +442,11 @@ class FreeplayState extends MusicBeatState
 				trace('CHANGED MOD DIRECTORY, RELOADING STUFF');
 				Paths.freeGraphicsFromMemory();
 			}
+			// Doubao LAN: host tells the joined client which song/difficulty to load
+			#if sys
+			if (backend.net.LanNet.isActive() && backend.net.LanNet.isHost())
+				backend.net.LanNet.send('SONG|s=' + songLowercase + '|d=' + curDifficulty);
+			#end
 			LoadingState.prepareToSong();
 			LoadingState.loadAndSwitchState(new PlayState());
 			#if !SHOW_LOADING_SCREEN FlxG.sound.music.stop(); #end
