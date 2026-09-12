@@ -217,6 +217,33 @@ class PlayState extends MusicBeatState
 	var timeTxt:FlxText;
 	var scoreTxtTween:FlxTween;
 
+	// Doubao Engine: per-side stats (0 = P1/opponent/left, 1 = P2/boyfriend/right) for two-player & LAN HUD
+	public var dbSideHits:Array<Int> = [0, 0];
+	public var dbSideMiss:Array<Int> = [0, 0];
+	public var dbSideCombo:Array<Int> = [0, 0];
+	var dbHudTxt:Array<FlxText> = [null, null];
+	public function dbSideOf(note:Note):Int { return (note != null && note.isOpponent) ? 0 : 1; }
+	public function dbAcc(side:Int):Int
+	{
+		var tot:Int = dbSideHits[side] + dbSideMiss[side];
+		return tot == 0 ? 100 : Std.int(dbSideHits[side] * 100 / tot);
+	}
+	public function dbRefreshHud()
+	{
+		if (dbHudTxt[0] == null) return;
+		var labels:Array<String> = DoubaoConfig.isTwoPlayer() ? ['P1', 'P2'] : ['YOU', 'PEER'];
+		#if sys
+		if (backend.net.LanNet.isActive())
+			labels = [backend.net.LanNet.selfSlot == 0 ? backend.net.LanNet.selfName : (backend.net.LanNet.peerName.length > 0 ? backend.net.LanNet.peerName : 'PEER'),
+				backend.net.LanNet.selfSlot == 1 ? backend.net.LanNet.selfName : (backend.net.LanNet.peerName.length > 0 ? backend.net.LanNet.peerName : 'PEER')];
+		#end
+		for (side in 0...2)
+		{
+			if (dbHudTxt[side] != null)
+				dbHudTxt[side].text = labels[side] + '\n' + dbSideCombo[side] + ' COMBO\n' + dbSideMiss[side] + ' MISS\n' + dbAcc(side) + '%';
+		}
+	}
+
 	public static var campaignScore:Int = 0;
 	public static var campaignMisses:Int = 0;
 	public static var seenCutscene:Bool = false;
@@ -558,6 +585,27 @@ class PlayState extends MusicBeatState
 		scoreTxt.borderSize = 1.25;
 		scoreTxt.visible = !ClientPrefs.data.hideHud;
 		uiGroup.add(scoreTxt);
+
+		// Doubao Engine: two-side HUD (names / combo / miss / accuracy) for two-player & LAN
+		var dbShowSideHud:Bool = DoubaoConfig.isTwoPlayer();
+		#if sys
+		if (backend.net.LanNet.isActive()) dbShowSideHud = true;
+		#end
+		if (dbShowSideHud)
+		{
+			dbHudTxt[0] = new FlxText(16, 16, 360, '', 22);
+			dbHudTxt[0].setFormat(Paths.font("vcr.ttf"), 22, 0xFF8fd0ff, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			dbHudTxt[0].scrollFactor.set();
+			dbHudTxt[0].visible = !ClientPrefs.data.hideHud;
+			uiGroup.add(dbHudTxt[0]);
+
+			dbHudTxt[1] = new FlxText(FlxG.width - 376, 16, 360, '', 22);
+			dbHudTxt[1].setFormat(Paths.font("vcr.ttf"), 22, 0xFFff9db0, flixel.text.FlxTextAlign.RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			dbHudTxt[1].scrollFactor.set();
+			dbHudTxt[1].visible = !ClientPrefs.data.hideHud;
+			uiGroup.add(dbHudTxt[1]);
+			dbRefreshHud();
+		}
 
 		botplayTxt = new FlxText(400, healthBar.y - 90, FlxG.width - 800, Language.getPhrase("Botplay").toUpperCase(), 32);
 		botplayTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -3126,6 +3174,15 @@ class PlayState extends MusicBeatState
 		totalPlayed++;
 		RecalculateRating(true);
 
+		// Doubao per-side miss (only a real dropped note, not an empty press)
+		if (note != null && !endingSong)
+		{
+			var dbMSide:Int = dbSideOf(note);
+			dbSideMiss[dbMSide]++;
+			dbSideCombo[dbMSide] = 0;
+			dbRefreshHud();
+		}
+
 		// play character anims
 		var char:Character = (note != null && note.isOpponent) ? dad : boyfriend;
 		if((note != null && note.gfNote) || (SONG.notes[curSection] != null && SONG.notes[curSection].gfSection)) char = gf;
@@ -3210,6 +3267,14 @@ class PlayState extends MusicBeatState
 		if(result == LuaUtils.Function_Stop) return;
 
 		note.wasGoodHit = true;
+
+		// Doubao per-side stat for two-player / LAN HUD
+		{
+			var dbSide:Int = dbSideOf(note);
+			dbSideHits[dbSide]++;
+			dbSideCombo[dbSide]++;
+			dbRefreshHud();
+		}
 
 		if (note.hitsoundVolume > 0 && !note.hitsoundDisabled)
 			FlxG.sound.play(Paths.sound(note.hitsound), note.hitsoundVolume);

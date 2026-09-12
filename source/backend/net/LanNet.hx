@@ -18,9 +18,12 @@ import sys.thread.Mutex;
  */
 class LanNet
 {
-	public enum Mode { NONE; HOST; CLIENT; }
+	// connection mode (Haxe forbids nested enums, so use integer constants)
+	public static inline var NONE:Int = 0;
+	public static inline var HOST:Int = 1;
+	public static inline var CLIENT:Int = 2;
 
-	public static var mode:Mode = NONE;
+	public static var mode:Int = NONE;
 	public static var selfName:String = 'PLAYER';
 	public static var peerName:String = '';
 	/** 0 = host, 1 = client */
@@ -105,6 +108,9 @@ class LanNet
 			pushIn('__CONNECT__');
 			sendRaw(c, 'WELCOME|name=' + selfName + '|slot=1');
 			readerLoop(c);
+			// peer left: allow a fresh client to join afterwards
+			conn = null;
+			connected = false;
 		}
 	}
 

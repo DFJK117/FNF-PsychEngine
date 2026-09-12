@@ -17,9 +17,13 @@ import backend.net.LanNet;
  */
 class LanLobbyState extends MusicBeatState
 {
-	enum Page { MENU; JOIN; NAME; ROOM; }
+	// page state (integer constants; Haxe forbids nested enums)
+	static inline var MENU:Int = 0;
+	static inline var JOIN:Int = 1;
+	static inline var NAME:Int = 2;
+	static inline var ROOM:Int = 3;
 
-	var page:Page = MENU;
+	var page:Int = MENU;
 	var menuItems:Array<String> = ['HOST ROOM', 'JOIN ROOM', 'PLAYER NAME', 'BACK'];
 	var curSelected:Int = 0;
 
@@ -66,7 +70,7 @@ class LanLobbyState extends MusicBeatState
 	{
 		switch (page)
 		{
-			case MENU:
+			case 0: // MENU
 				var s:String = '';
 				for (i => item in menuItems)
 					s += (i == curSelected ? '> ' : '  ') + item + '\n';
@@ -75,19 +79,19 @@ class LanLobbyState extends MusicBeatState
 				statusTxt.text = 'YOU: ' + LanNet.selfName;
 				hintTxt.text = 'UP/DOWN select   ENTER confirm   ESC back';
 
-			case JOIN:
+			case 1: // JOIN
 				titleTxt.text = 'JOIN ROOM';
 				listTxt.text = 'HOST IP: ' + ipBuffer + '_';
 				statusTxt.text = (errorMsg.length > 0 ? errorMsg : 'type host IPv4 (example 192.168.1.10)');
 				hintTxt.text = '0-9 and . to type   BACKSPACE delete   ENTER join   ESC back';
 
-			case NAME:
+			case 2: // NAME
 				titleTxt.text = 'PLAYER NAME';
 				listTxt.text = 'NAME: ' + nameBuffer + '_';
 				statusTxt.text = 'A-Z / 0-9, max 10 chars';
 				hintTxt.text = 'type your name   ENTER save   ESC back';
 
-			case ROOM:
+			case 3: // ROOM
 				titleTxt.text = LanNet.isHost() ? 'ROOM (HOST)' : 'ROOM (CLIENT)';
 				var r:String = 'YOU (' + LanNet.selfName + ')\n';
 				r += (LanNet.connected ? 'PEER: ' + (LanNet.peerName.length > 0 ? LanNet.peerName : 'connected') : 'WAITING FOR PEER...') + '\n';
@@ -120,10 +124,10 @@ class LanLobbyState extends MusicBeatState
 
 		switch (page)
 		{
-			case MENU: updateMenu();
-			case JOIN: updateTyping(true);
-			case NAME: updateTyping(false);
-			case ROOM: updateRoom();
+			case 0: updateMenu(); // MENU
+			case 1: updateTyping(true); // JOIN
+			case 2: updateTyping(false); // NAME
+			case 3: updateRoom(); // ROOM
 		}
 	}
 
@@ -139,13 +143,13 @@ class LanLobbyState extends MusicBeatState
 			{
 				case 0:
 					errorMsg = '';
-					if (LanNet.host(ClientPrefs.data.lanPort)) page = Page.ROOM;
+					if (LanNet.host(ClientPrefs.data.lanPort)) page = ROOM;
 					else errorMsg = 'FAILED TO HOST (port in use?)';
 					redraw();
 				case 1:
-					errorMsg = ''; ipBuffer = ''; page = Page.JOIN; redraw();
+					errorMsg = ''; ipBuffer = ''; page = JOIN; redraw();
 				case 2:
-					nameBuffer = LanNet.selfName; page = Page.NAME; redraw();
+					nameBuffer = LanNet.selfName; page = NAME; redraw();
 				case 3: MusicBeatState.switchState(new MainMenuState());
 			}
 		}
@@ -179,7 +183,7 @@ class LanLobbyState extends MusicBeatState
 			{
 				if (ipBuffer.length > 0 && LanNet.join(ipBuffer, ClientPrefs.data.lanPort))
 				{
-					errorMsg = ''; page = Page.ROOM;
+					errorMsg = ''; page = ROOM;
 				}
 				else errorMsg = 'CANNOT CONNECT TO ' + ipBuffer;
 				redraw();
@@ -189,10 +193,10 @@ class LanLobbyState extends MusicBeatState
 				LanNet.setName(nameBuffer);
 				ClientPrefs.data.lanPlayerName = LanNet.selfName;
 				ClientPrefs.saveSettings();
-				page = Page.MENU; redraw();
+				page = MENU; redraw();
 			}
 		}
-		if (controls.BACK) { page = Page.MENU; errorMsg = ''; redraw(); }
+		if (controls.BACK) { page = MENU; errorMsg = ''; redraw(); }
 	}
 
 	function updateRoom()
@@ -209,7 +213,7 @@ class LanLobbyState extends MusicBeatState
 		{
 			LanNet.reset();
 			ClientPrefs.data.lanEnabled = false;
-			page = Page.MENU; redraw();
+			page = MENU; redraw();
 		}
 	}
 
@@ -238,6 +242,6 @@ class LanLobbyState extends MusicBeatState
 				default:
 			}
 		}
-		if (changed && page == Page.ROOM) redraw();
+		if (changed && page == ROOM) redraw();
 	}
 }
