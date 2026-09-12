@@ -56,11 +56,10 @@ class LanNet
 		try
 		{
 			var h:Host = new Host(Host.localhost());
-			if (h.ip != null)
-			{
-				var s:String = Std.string(h.ip);
-				if (s.length > 0 && s != '0.0.0.0') return s;
-			}
+			// on hxcpp Host.ip is a 32-bit integer (network order), convert to dotted form
+			var ip:Int = h.ip;
+			var s:String = (ip >>> 24) + '.' + ((ip >>> 16) & 255) + '.' + ((ip >>> 8) & 255) + '.' + (ip & 255);
+			if (s.length > 0 && s != '0.0.0.0') return s;
 		}
 		catch (e:Dynamic) {}
 		return '127.0.0.1';
