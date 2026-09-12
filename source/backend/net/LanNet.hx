@@ -55,8 +55,8 @@ class LanNet
 	{
 		try
 		{
-			var h:Host = Host.localhost();
-			if (h != null && h.ip != null)
+			var h:Host = new Host(Host.localhost());
+			if (h.ip != null)
 			{
 				var s:String = Std.string(h.ip);
 				if (s.length > 0 && s != '0.0.0.0') return s;

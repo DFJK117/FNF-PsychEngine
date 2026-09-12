@@ -222,7 +222,24 @@ class PlayState extends MusicBeatState
 	public var dbSideMiss:Array<Int> = [0, 0];
 	public var dbSideCombo:Array<Int> = [0, 0];
 	var dbHudTxt:Array<FlxText> = [null, null];
+	// Doubao LAN: last stats received from the remote peer (for the shadow side HUD)
+	var dbPeerCombo:Int = 0;
+	var dbPeerMiss:Int = 0;
+	var dbPeerAcc:Int = 100;
+	var dbStatTimer:Float = 0;
 	public function dbSideOf(note:Note):Int { return (note != null && note.isOpponent) ? 0 : 1; }
+	/** LAN: a "shadow" note belongs to the remote player -> auto-played locally, never locally missed/scored. */
+	public function dbShadow(note:Note):Bool
+	{
+		#if sys
+		if (backend.net.LanNet.isActive())
+		{
+			var ownOpp:Bool = backend.net.LanNet.selfSlot == 0; // host owns opponent/Dad side
+			return note.isOpponent != ownOpp;
+		}
+		#end
+		return false;
+	}
 	public function dbAcc(side:Int):Int
 	{
 		var tot:Int = dbSideHits[side] + dbSideMiss[side];
@@ -231,17 +248,56 @@ class PlayState extends MusicBeatState
 	public function dbRefreshHud()
 	{
 		if (dbHudTxt[0] == null) return;
-		var labels:Array<String> = DoubaoConfig.isTwoPlayer() ? ['P1', 'P2'] : ['YOU', 'PEER'];
 		#if sys
-		if (backend.net.LanNet.isActive())
-			labels = [backend.net.LanNet.selfSlot == 0 ? backend.net.LanNet.selfName : (backend.net.LanNet.peerName.length > 0 ? backend.net.LanNet.peerName : 'PEER'),
-				backend.net.LanNet.selfSlot == 1 ? backend.net.LanNet.selfName : (backend.net.LanNet.peerName.length > 0 ? backend.net.LanNet.peerName : 'PEER')];
+		var lan:Bool = backend.net.LanNet.isActive();
 		#end
 		for (side in 0...2)
 		{
-			if (dbHudTxt[side] != null)
-				dbHudTxt[side].text = labels[side] + '\n' + dbSideCombo[side] + ' COMBO\n' + dbSideMiss[side] + ' MISS\n' + dbAcc(side) + '%';
+			if (dbHudTxt[side] == null) continue;
+			var lab:String = DoubaoConfig.isTwoPlayer() ? (side == 0 ? 'P1' : 'P2') : 'YOU';
+			var combo:Int = dbSideCombo[side];
+			var miss:Int = dbSideMiss[side];
+			var acc:Int = dbAcc(side);
+			#if sys
+			if (lan)
+			{
+				var mine:Bool = side == backend.net.LanNet.selfSlot;
+				lab = mine ? backend.net.LanNet.selfName : (backend.net.LanNet.peerName.length > 0 ? backend.net.LanNet.peerName : 'PEER');
+				if (!mine) { combo = dbPeerCombo; miss = dbPeerMiss; acc = dbPeerAcc; }
+			}
+			#end
+			dbHudTxt[side].text = lab + '\n' + combo + ' COMBO\n' + miss + ' MISS\n' + acc + '%';
 		}
+	}
+	/** Doubao LAN: send my side stats periodically and ingest the peer's. Call from update. */
+	public function dbNetTick(elapsed:Float)
+	{
+		#if sys
+		if (!backend.net.LanNet.isActive()) return;
+		// receive
+		for (msg in backend.net.LanNet.poll())
+		{
+			switch (backend.net.LanNet.typeOf(msg))
+			{
+				case 'STAT':
+					dbPeerCombo = Std.parseInt(backend.net.LanNet.field(msg, 'c', '0')) ?? dbPeerCombo;
+					dbPeerMiss = Std.parseInt(backend.net.LanNet.field(msg, 'm', '0')) ?? dbPeerMiss;
+					dbPeerAcc = Std.parseInt(backend.net.LanNet.field(msg, 'a', '100')) ?? dbPeerAcc;
+					dbRefreshHud();
+				case '__DISCONNECT__':
+					backend.net.LanNet.connected = false;
+				default:
+			}
+		}
+		// send my own side ~5x per second
+		dbStatTimer += elapsed;
+		if (dbStatTimer >= 0.2)
+		{
+			dbStatTimer = 0;
+			var my:Int = backend.net.LanNet.selfSlot;
+			backend.net.LanNet.send('STAT|c=' + dbSideCombo[my] + '|m=' + dbSideMiss[my] + '|a=' + dbAcc(my));
+		}
+		#end
 	}
 
 	public static var campaignScore:Int = 0;
@@ -1796,6 +1852,9 @@ class PlayState extends MusicBeatState
 
 		super.update(elapsed);
 
+		// Doubao LAN: exchange stats with the remote player every frame
+		dbNetTick(elapsed);
+
 		setOnScripts('curDecStep', curDecStep);
 		setOnScripts('curDecBeat', curDecBeat);
 
@@ -1926,7 +1985,7 @@ class PlayState extends MusicBeatState
 
 							if(daNote.mustPress)
 							{
-								if(cpuControlled && !daNote.blockHit && daNote.canBeHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
+								if((cpuControlled || dbShadow(daNote)) && !daNote.blockHit && daNote.canBeHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
 									goodNoteHit(daNote);
 							}
 							else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
@@ -1937,7 +1996,7 @@ class PlayState extends MusicBeatState
 							// Kill extremely late notes and cause misses
 							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
 							{
-								if (daNote.mustPress && !cpuControlled && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
+								if (daNote.mustPress && !cpuControlled && !dbShadow(daNote) && !daNote.ignoreNote && !endingSong && (daNote.tooLate || !daNote.wasGoodHit))
 									noteMiss(daNote);
 
 								daNote.active = daNote.visible = false;
@@ -2692,7 +2751,7 @@ class PlayState extends MusicBeatState
 		if(daRating.noteSplash && !note.noteSplashData.disabled)
 			spawnNoteSplashOnNote(note);
 
-		if(!cpuControlled) {
+		if(!cpuControlled && !dbShadow(note)) {
 			songScore += score;
 			if(!note.ratingDisabled)
 			{
@@ -2841,6 +2900,10 @@ class PlayState extends MusicBeatState
 
 	private function keyPressed(key:Int)
 	{
+		#if sys
+		// Doubao LAN: only the client (slot 1) plays the BF/player side
+		if (backend.net.LanNet.isActive() && backend.net.LanNet.selfSlot != 1) return;
+		#end
 		if(cpuControlled || paused || inCutscene || key < 0 || key >= playerStrums.length || !generatedMusic || endingSong || boyfriend.stunned) return;
 
 		var ret:Dynamic = callOnScripts('onKeyPressPre', [key]);
@@ -2903,6 +2966,10 @@ class PlayState extends MusicBeatState
 	// Doubao Engine: Player 1 controls the opponent Dad side (left) in two-player mode
 	private function keyPressedP1(key:Int)
 	{
+		#if sys
+		// Doubao LAN: only the host (slot 0) plays the Dad/opponent side
+		if (backend.net.LanNet.isActive() && backend.net.LanNet.selfSlot != 0) return;
+		#end
 		if(cpuControlled || paused || inCutscene || key < 0 || key >= opponentStrums.length || !generatedMusic || endingSong) return;
 
 		var lastTime:Float = Conductor.songPosition;
@@ -3268,7 +3335,8 @@ class PlayState extends MusicBeatState
 
 		note.wasGoodHit = true;
 
-		// Doubao per-side stat for two-player / LAN HUD
+		// Doubao per-side stat for two-player / LAN HUD (skip remote shadow notes)
+		if (!dbShadow(note))
 		{
 			var dbSide:Int = dbSideOf(note);
 			dbSideHits[dbSide]++;
@@ -3338,7 +3406,7 @@ class PlayState extends MusicBeatState
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
 			// Doubao Engine: in two-player, P1 controls the opponent (Dad) side, so its hits push the bar TOWARD Dad (away from BF)
 			var healthDir:Float = (DoubaoConfig.isTwoPlayer() && note.isOpponent) ? -1 : 1;
-			if (gainHealth) health += note.hitHealth * healthGain * healthDir;
+			if (gainHealth && !dbShadow(note)) health += note.hitHealth * healthGain * healthDir;
 
 		}
 		else //Notes that count as a miss if you hit them (Hurt notes for example)
