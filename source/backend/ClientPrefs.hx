@@ -85,6 +85,10 @@ import states.TitleState;
 	public var doubaoTwoPlayer:Bool = false;
 	// Player 1 (opponent) independent scroll direction in two-player mode
 	public var doubaoP1DownScroll:Bool = false;
+	// Doubao Engine: LAN multiplayer
+	public var lanPlayerName:String = 'PLAYER';
+	public var lanPort:Int = 27301;
+	public var lanEnabled:Bool = false;
 }
 
 class ClientPrefs {

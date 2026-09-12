@@ -27,6 +27,7 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = [
 		'story_mode',
 		'freeplay',
+		'lanplay',
 		#if MODS_ALLOWED 'mods', #end
 		'credits'
 	];
@@ -297,6 +298,8 @@ class MainMenuState extends MusicBeatState
 							MusicBeatState.switchState(new StoryMenuState());
 						case 'freeplay':
 							MusicBeatState.switchState(new FreeplayState());
+						case 'lanplay':
+							MusicBeatState.switchState(new LanLobbyState());
 
 						#if MODS_ALLOWED
 						case 'mods':

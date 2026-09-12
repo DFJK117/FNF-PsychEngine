@@ -69,6 +69,17 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		dbP1.customGet = function() return ClientPrefs.data.doubaoP1DownScroll;
 		dbP1.customSet = function(v) ClientPrefs.data.doubaoP1DownScroll = v;
 		optionsArray.push(dbP1);
+
+		// English toggle that opens the LAN room/lobby (actual connection is set up there)
+		var dbLan:GameplayOption = new GameplayOption('Enable LAN Multiplayer', 'lanEnabled', BOOL, ClientPrefs.data.lanEnabled);
+		dbLan.customGet = function() return ClientPrefs.data.lanEnabled;
+		dbLan.customSet = function(v)
+		{
+			ClientPrefs.data.lanEnabled = v;
+			ClientPrefs.saveSettings();
+			if (v) flixel.FlxG.switchState(new states.LanLobbyState());
+		};
+		optionsArray.push(dbLan);
 		// ===== End Doubao Engine options =====
 
 		var goption:GameplayOption = new GameplayOption('Scroll Type', 'scrolltype', STRING, 'multiplicative', ["multiplicative", "constant"]);
