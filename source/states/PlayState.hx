@@ -227,6 +227,14 @@ class PlayState extends MusicBeatState
 	var dbPeerMiss:Int = 0;
 	var dbPeerAcc:Int = 100;
 	var dbStatTimer:Float = 0;
+	// Doubao LAN: countdown start handshake so both sides actually begin the song together
+	// dbWaitKind: 0 idle, 1 host waiting for client READY, 2 client waiting for host GO, 3 aligned 0.5s hold before release
+	var dbStartReleased:Bool = false;
+	var dbWaitKind:Int = 0;
+	var dbWaitElapsed:Float = 0;
+	var dbSyncTxt:FlxText = null;
+	static inline var DB_GO_HOLD:Float = 0.5;
+	static inline var DB_WAIT_TIMEOUT:Float = 8.0;
 	public function dbSideOf(note:Note):Int { return (note != null && note.isOpponent) ? 0 : 1; }
 	/** LAN: a "shadow" note belongs to the remote player -> auto-played locally, never locally missed/scored. */
 	public function dbShadow(note:Note):Bool
@@ -284,10 +292,34 @@ class PlayState extends MusicBeatState
 					dbPeerMiss = Std.parseInt(backend.net.LanNet.field(msg, 'm', '0')) ?? dbPeerMiss;
 					dbPeerAcc = Std.parseInt(backend.net.LanNet.field(msg, 'a', '100')) ?? dbPeerAcc;
 					dbRefreshHud();
+				case 'READY':
+					// client finished loading; host kicks off the aligned start
+					if (dbWaitKind == 1)
+					{
+						backend.net.LanNet.send('GO');
+						dbWaitKind = 3;
+						dbWaitElapsed = 0;
+						dbSetSync('PEER READY - STARTING...');
+					}
+				case 'GO':
+					// client: align with host over a short fixed hold (LAN RTT is negligible)
+					if (dbWaitKind == 2)
+					{
+						dbWaitKind = 3;
+						dbWaitElapsed = 0;
+						dbSetSync('STARTING...');
+					}
 				case '__DISCONNECT__':
 					backend.net.LanNet.connected = false;
 				default:
 			}
+		}
+		// start-handshake timeout / aligned hold
+		if (dbWaitKind != 0)
+		{
+			dbWaitElapsed += elapsed;
+			if (dbWaitKind == 3 && dbWaitElapsed >= DB_GO_HOLD) dbReleaseStart();
+			else if ((dbWaitKind == 1 || dbWaitKind == 2) && dbWaitElapsed >= DB_WAIT_TIMEOUT) dbReleaseStart();
 		}
 		// send my own side ~5x per second
 		dbStatTimer += elapsed;
@@ -298,6 +330,52 @@ class PlayState extends MusicBeatState
 			backend.net.LanNet.send('STAT|c=' + dbSideCombo[my] + '|m=' + dbSideMiss[my] + '|a=' + dbAcc(my));
 		}
 		#end
+	}
+
+	/** LAN: hold the countdown until both clients finished loading, then release together. */
+	public function dbGateStart():Void
+	{
+		#if sys
+		dbWaitElapsed = 0;
+		if (dbSyncTxt == null)
+		{
+			dbSyncTxt = new FlxText(0, FlxG.height * 0.5 - 40, FlxG.width, '', 40);
+			dbSyncTxt.setFormat(Paths.font('vcr.ttf'), 40, FlxColor.WHITE, flixel.text.FlxTextAlign.CENTER, flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			dbSyncTxt.scrollFactor.set();
+			dbSyncTxt.cameras = [camHUD];
+			add(dbSyncTxt);
+		}
+		if (backend.net.LanNet.selfSlot == 0)
+		{
+			// host waits for the client's READY
+			dbWaitKind = 1;
+			dbSetSync('WAITING FOR OTHER PLAYER...');
+		}
+		else
+		{
+			// client announces it is loaded and waits for GO
+			dbWaitKind = 2;
+			backend.net.LanNet.send('READY');
+			dbSetSync('WAITING FOR HOST...');
+		}
+		#end
+	}
+
+	public function dbSetSync(t:String):Void
+	{
+		if (dbSyncTxt != null) dbSyncTxt.text = t;
+	}
+
+	public function dbReleaseStart():Void
+	{
+		dbWaitKind = 0;
+		dbStartReleased = true;
+		if (dbSyncTxt != null)
+		{
+			remove(dbSyncTxt);
+			dbSyncTxt = null;
+		}
+		startCountdown();
 	}
 
 	public static var campaignScore:Int = 0;
@@ -1064,6 +1142,14 @@ class PlayState extends MusicBeatState
 
 	public function startCountdown()
 	{
+		// Doubao LAN: hold both sides at the gate until a READY/GO handshake aligns the start
+		#if sys
+		if (backend.net.LanNet.isActive() && !dbStartReleased)
+		{
+			dbGateStart();
+			return false;
+		}
+		#end
 		if(startedCountdown) {
 			callOnScripts('onStartCountdown');
 			return false;
