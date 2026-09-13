@@ -389,7 +389,7 @@ class PlayState extends MusicBeatState
 		var out:String = '';
 		for (k in binds)
 		{
-			if (FlxG.keys.pressed(k))
+			if (FlxG.keys.anyPressed([k]))
 			{
 				if (out.length > 0) out += '  ';
 				out += backend.InputFormatter.getKeyName(k);
@@ -1215,12 +1215,12 @@ class PlayState extends MusicBeatState
 			// Doubao: front-load a garbage-collection pass during the countdown so the GC does
 			// not stall mid-song, and poll input/logic at a higher rate for lower key latency.
 			#if cpp
-			hxcpp.Gc.run(true);
+			cpp.vm.Gc.run(true);
 			#end
 			if (ClientPrefs.data.lowInputLatency)
 			{
-				FlxG.persistentUpdate = true;
-				FlxG.updateFramerate = Math.max(120, ClientPrefs.data.framerate);
+				persistentUpdate = true; // keep stepping even when the window loses focus
+				FlxG.updateFramerate = Std.int(Math.max(120, ClientPrefs.data.framerate));
 			}
 			if (skipCountdown || startOnTime > 0) skipArrowStartTween = true;
 

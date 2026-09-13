@@ -81,7 +81,9 @@ class DoubaoConfig
 	static function xrankOf(k:FlxKey):Float
 	{
 		if (XRANK == null) buildXRank();
-		return XRANK.exists(k) ? XRANK.get(k) : 900 + Std.int(k);
+		if (XRANK.exists(k)) return XRANK.get(k);
+		var ki:Int = k; // enum abstract over Int -> safe unbox
+		return 900 + ki;
 	}
 
 	/**
@@ -93,7 +95,7 @@ class DoubaoConfig
 	{
 		if (k >= 0 && k < SOLO_BINDS.length && SOLO_BINDS[k].length == k) return SOLO_BINDS[k].copy();
 		var odd:Bool = (k % 2 == 1);
-		var pairs:Int = odd ? (k - 1) / 2 : k / 2;
+		var pairs:Int = odd ? ((k - 1) >> 1) : (k >> 1);
 		var sel:Array<FlxKey> = [];
 		for (i in 0...pairs)
 		{
