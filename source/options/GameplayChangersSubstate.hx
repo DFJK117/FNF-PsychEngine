@@ -22,8 +22,10 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 	function getOptions()
 	{
 		// ===== Doubao Engine: lane count / two-player, listed first (this menu opens with CTRL in Freeplay) =====
-		// AUTO = follow whatever K-count the chart uses; picking a fixed 4K..9K overrides it
-		var laneLabels:Array<String> = ['AUTO', '4K', '5K', '6K', '7K', '8K', '9K'];
+		// AUTO = follow whatever K-count the chart uses; picking a fixed 1K..61K overrides it
+		var laneLabels:Array<String> = ['AUTO'];
+		for (lk in 1...21) laneLabels.push(Std.string(lk) + 'K'); // 1K..20K
+		laneLabels.push('24K'); laneLabels.push('32K'); laneLabels.push('61K');
 		var dbLanes:GameplayOption = new GameplayOption('Lane Count', 'doubaoLaneMode', STRING, 'AUTO', laneLabels);
 		dbLanes.customGet = function() return ClientPrefs.data.doubaoKeysAuto ? 'AUTO' : (Std.string(ClientPrefs.data.doubaoKeys) + 'K');
 		dbLanes.customSet = function(v)
@@ -36,8 +38,9 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 			else
 			{
 				ClientPrefs.data.doubaoKeysAuto = false;
-				ClientPrefs.data.doubaoKeys = Std.parseInt(s.split('K')[0]);
-				if (ClientPrefs.data.doubaoKeys > 4) ClientPrefs.data.doubaoTwoPlayer = false; // 5K+ is strictly solo
+				var n:Int = Std.parseInt(s.split('K')[0]);
+				ClientPrefs.data.doubaoKeys = n;
+				if (n != 4) ClientPrefs.data.doubaoTwoPlayer = false; // only 4K allows two-player
 			}
 			DoubaoConfig.syncFromPrefs();
 		};
@@ -80,6 +83,11 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 			if (v) flixel.FlxG.switchState(new states.LanLobbyState());
 		};
 		optionsArray.push(dbLan);
+
+		var dbLatency:GameplayOption = new GameplayOption('Low Input Latency', 'lowInputLatency', BOOL, ClientPrefs.data.lowInputLatency);
+		dbLatency.customGet = function() return ClientPrefs.data.lowInputLatency;
+		dbLatency.customSet = function(v) ClientPrefs.data.lowInputLatency = v;
+		optionsArray.push(dbLatency);
 		// ===== End Doubao Engine options =====
 
 		var goption:GameplayOption = new GameplayOption('Scroll Type', 'scrolltype', STRING, 'multiplicative', ["multiplicative", "constant"]);

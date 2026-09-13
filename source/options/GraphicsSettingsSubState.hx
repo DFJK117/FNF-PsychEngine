@@ -25,6 +25,14 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			BOOL); //Variable type
 		addOption(option);
 
+		// Doubao Engine: real fullscreen toggle, applies instantly and persists
+		var fsOption:Option = new Option('Fullscreen',
+			'Toggle real fullscreen. In fullscreen the GPU dedicates itself to rendering this game,\nwhich usually lowers latency and removes the window border.',
+			'doubaoFullscreen',
+			BOOL);
+		fsOption.onChange = onChangeFullscreen;
+		addOption(fsOption);
+
 		var option:Option = new Option('Anti-Aliasing',
 			'If unchecked, disables anti-aliasing, increases performance\nat the cost of sharper visuals.',
 			'antialiasing',
@@ -62,6 +70,12 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 
 		super();
 		insert(1, boyfriend);
+	}
+
+	function onChangeFullscreen()
+	{
+		FlxG.fullscreen = ClientPrefs.data.doubaoFullscreen;
+		if (FlxG.save.data != null) FlxG.save.data.fullscreen = ClientPrefs.data.doubaoFullscreen;
 	}
 
 	function onChangeAntiAliasing()

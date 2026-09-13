@@ -89,6 +89,10 @@ import states.TitleState;
 	public var lanPlayerName:String = 'PLAYER';
 	public var lanPort:Int = 27301;
 	public var lanEnabled:Bool = false;
+	// Doubao Engine: real fullscreen toggle (Graphics Settings)
+	public var doubaoFullscreen:Bool = false;
+	// Doubao Engine: poll input/logic at a higher rate and front-load GC for lower latency
+	public var lowInputLatency:Bool = true;
 }
 
 class ClientPrefs {

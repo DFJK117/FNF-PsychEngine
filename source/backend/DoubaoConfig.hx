@@ -18,8 +18,8 @@ import flixel.math.FlxMath;
  */
 class DoubaoConfig
 {
-	/** Maximum supported lanes (9K) */
-	public static inline var MAX_KEYS:Int = 9;
+	/** Maximum supported lanes (up to a 61-key piano-style layout) */
+	public static inline var MAX_KEYS:Int = 61;
 	/** Vanilla 4K lane spacing baseline (160 * 0.7) */
 	public static inline var BASE_SWAG_WIDTH:Float = 112;
 
@@ -31,21 +31,88 @@ class DoubaoConfig
 	public static var twoPlayer:Bool = false;
 
 	/**
-	 * Solo multi-key physical binds, indexed by lane count.
-	 * 5K = D F SPACE G K (user specified); 6K/9K follow LeatherEngine symmetric layout.
+	 * Hand-tuned binds for the common 1..9K counts (stable muscle memory).
+	 * 5K = D F SPACE J K (piano: left hand D F, thumb SPACE, right hand J K).
 	 */
 	public static var SOLO_BINDS:Array<Array<FlxKey>> = [
 		[],                                  // 0 (unused)
 		[SPACE],                             // 1
 		[F, J],                              // 2
 		[F, SPACE, J],                       // 3
-		[LEFT, DOWN, UP, RIGHT],            // 4 (vanilla arrows)
-		[D, F, SPACE, G, K],                // 5
-		[S, D, F, J, K, L],                 // 6
-		[S, D, F, SPACE, J, K, L],          // 7
-		[A, S, D, F, H, J, K, L],           // 8
-		[A, S, D, F, SPACE, H, J, K, L]     // 9
+		[LEFT, DOWN, UP, RIGHT],             // 4 (vanilla arrows)
+		[D, F, SPACE, J, K],                 // 5
+		[S, D, F, J, K, L],                  // 6
+		[S, D, F, SPACE, J, K, L],           // 7
+		[A, S, D, F, H, J, K, L],            // 8
+		[A, S, D, F, SPACE, H, J, K, L]      // 9
 	];
+
+	// Hand-feel pick order (near axis -> far) for the first 4 symmetric pairs.
+	static var L_STACK:Array<FlxKey> = [F, D, S, A];
+	static var R_STACK:Array<FlxKey> = [J, K, L, H];
+	// Strictly mirroring pairs (left,right) used from the 5th pair outward, for 10K+.
+	static var EXTRA_PAIRS:Array<Array<FlxKey>> = [
+		[R, U], [E, I], [W, O], [Q, P], [T, Y],
+		[V, M], [C, COMMA], [X, PERIOD], [Z, SLASH], [B, N],
+		[G, SEMICOLON],
+		[FIVE, SIX], [FOUR, SEVEN], [THREE, EIGHT], [TWO, NINE], [ONE, ZERO], [GRAVEACCENT, MINUS],
+		[LEFT, RIGHT], [DOWN, UP]
+	];
+	// Appended at the far right for the extreme 50K..61K range (numeric pad).
+	static var TAIL_KEYS:Array<FlxKey> = [NUMPADZERO, NUMPADONE, NUMPADTWO, NUMPADTHREE, NUMPADFOUR, NUMPADFIVE, NUMPADSIX, NUMPADSEVEN, NUMPADEIGHT, NUMPADNINE, NUMPADPERIOD, NUMPADPLUS, NUMPADMINUS, NUMPADMULTIPLY];
+
+	/** Physical left->right weight so the picked keys are emitted in keyboard order. */
+	static var XRANK:Map<FlxKey, Float> = null;
+	static function buildXRank():Void
+	{
+		XRANK = new Map();
+		var numRow:Array<FlxKey> = [GRAVEACCENT, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, ZERO, MINUS];
+		for (i => k in numRow) XRANK.set(k, 100 + i);
+		var qRow:Array<FlxKey> = [Q, W, E, R, T, Y, U, I, O, P, LBRACKET, RBRACKET];
+		for (i => k in qRow) XRANK.set(k, 200 + i);
+		var aRow:Array<FlxKey> = [A, S, D, F, G, H, J, K, L, SEMICOLON, QUOTE];
+		for (i => k in aRow) XRANK.set(k, 300 + i);
+		XRANK.set(SPACE, 304.5); // between F and H (thumb)
+		var zRow:Array<FlxKey> = [Z, X, C, V, B, N, M, COMMA, PERIOD, SLASH];
+		for (i => k in zRow) XRANK.set(k, 400 + i);
+		XRANK.set(LEFT, 500); XRANK.set(DOWN, 501); XRANK.set(UP, 502); XRANK.set(RIGHT, 503);
+		for (i => k in TAIL_KEYS) XRANK.set(k, 600 + i);
+	}
+	static function xrankOf(k:FlxKey):Float
+	{
+		if (XRANK == null) buildXRank();
+		return XRANK.exists(k) ? XRANK.get(k) : 900 + Std.int(k);
+	}
+
+	/**
+	 * Build physical binds for ANY lane count 1..MAX_KEYS.
+	 * Expands symmetrically outward from F/J; odd counts insert SPACE in the middle,
+	 * then everything is sorted into physical left->right keyboard order.
+	 */
+	public static function buildSoloBinds(k:Int):Array<FlxKey>
+	{
+		if (k >= 0 && k < SOLO_BINDS.length && SOLO_BINDS[k].length == k) return SOLO_BINDS[k].copy();
+		var odd:Bool = (k % 2 == 1);
+		var pairs:Int = odd ? (k - 1) / 2 : k / 2;
+		var sel:Array<FlxKey> = [];
+		for (i in 0...pairs)
+		{
+			if (i < L_STACK.length) { sel.push(L_STACK[i]); sel.push(R_STACK[i]); }
+			else
+			{
+				var ei:Int = i - L_STACK.length;
+				if (ei < EXTRA_PAIRS.length) { sel.push(EXTRA_PAIRS[ei][0]); sel.push(EXTRA_PAIRS[ei][1]); }
+			}
+		}
+		if (odd) sel.push(SPACE);
+		var ti:Int = 0;
+		while (sel.length < k && ti < TAIL_KEYS.length) { sel.push(TAIL_KEYS[ti]); ti++; }
+		sel.sort(function(a, b):Int {
+			var xa:Float = xrankOf(a), xb:Float = xrankOf(b);
+			return xa < xb ? -1 : (xa > xb ? 1 : 0);
+		});
+		return sel;
+	}
 
 	/** Two-player 4K: Player 1 (opponent Dad, left); defaults A S W D, rebindable via ClientPrefs.keyBinds */
 	public static var P1_KEYS:Array<FlxKey> = [A, S, W, D];
@@ -92,11 +159,12 @@ class DoubaoConfig
 		{
 			// Keep whatever the chart scan already detected (applyDetectedKeyCount runs when the chart loads, before PlayState.create).
 			// On a fresh launch with no chart loaded yet it stays at the static default of 4.
-			if (keyCount < 4 || keyCount > MAX_KEYS) keyCount = 4;
+			if (keyCount < 1 || keyCount > MAX_KEYS) keyCount = 4;
 		}
 		else
 		{
-			keyCount = Std.int(FlxMath.bound(ClientPrefs.data.doubaoKeys, 4, MAX_KEYS));
+			// manual override allows the full 1K..61K range
+			keyCount = Std.int(FlxMath.bound(ClientPrefs.data.doubaoKeys, 1, MAX_KEYS));
 		}
 		// Two-player is only valid at 4K; any multi-key chart is strictly solo.
 		twoPlayer = ClientPrefs.data.doubaoTwoPlayer && keyCount == 4;
@@ -143,20 +211,23 @@ class DoubaoConfig
 		return twoPlayer && keyCount == 4;
 	}
 
-	/** Whether we are in a solo multi-key (>4K) mode */
+	/** Whether we are in a solo custom-key layout (anything other than vanilla 4K: 1K..3K or 5K..61K) */
 	public static function isSoloMulti():Bool
 	{
-		return !isTwoPlayer() && keyCount > 4;
+		return !isTwoPlayer() && keyCount != 4;
 	}
 
 	/** Display direction (0..3) for a lane in the current mode */
 	public static function directionOf(lane:Int):Int
 	{
-		var row:Array<Int> = DIRECTIONS[keyCount];
-		var idx:Int = lane;
-		if (idx < 0) idx = -idx;
-		if (row.length == 0) return idx % 4;
-		return row[idx % row.length];
+		var idx:Int = lane < 0 ? -lane : lane;
+		if (keyCount >= 0 && keyCount < DIRECTIONS.length)
+		{
+			var row:Array<Int> = DIRECTIONS[keyCount];
+			if (row.length > 0) return row[idx % row.length];
+		}
+		// 10K+: cycle LEFT/DOWN/UP/RIGHT so colors spread evenly across the row
+		return idx % 4;
 	}
 
 	/**
@@ -171,8 +242,10 @@ class DoubaoConfig
 			var halfAvail:Float = screenW / 2 - 92;
 			return Math.min(BASE_SWAG_WIDTH, halfAvail / keyCount);
 		}
-		// solo: one centered row, leave side padding
-		var avail:Float = screenW - 160;
+		// solo: one centered row. Tighten side padding as lane count grows so dense
+		// layouts (10K..61K) still fill the width and each arrow stays as large as possible.
+		var pad:Float = keyCount > 20 ? 16 : (keyCount > 9 ? 48 : 160);
+		var avail:Float = screenW - pad;
 		return Math.min(BASE_SWAG_WIDTH, avail / keyCount);
 	}
 
@@ -205,7 +278,7 @@ class DoubaoConfig
 	/** Physical key -> solo lane index (-1 if not a bind in current solo layout) */
 	public static function getSoloIndex(k:FlxKey):Int
 	{
-		var binds:Array<FlxKey> = SOLO_BINDS[keyCount];
+		var binds:Array<FlxKey> = buildSoloBinds(keyCount);
 		for (i in 0...binds.length)
 			if (binds[i] == k) return i;
 		return -1;

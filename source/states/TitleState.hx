@@ -80,9 +80,11 @@ class TitleState extends MusicBeatState
 
 		if(!initialized)
 		{
-			if(FlxG.save.data != null && FlxG.save.data.fullscreen)
+			// Doubao Engine: honor both the legacy save flag and the Graphics Settings fullscreen toggle
+			var wantFs:Bool = (FlxG.save.data != null && FlxG.save.data.fullscreen) || ClientPrefs.data.doubaoFullscreen;
+			if(wantFs)
 			{
-				FlxG.fullscreen = FlxG.save.data.fullscreen;
+				FlxG.fullscreen = true;
 				//trace('LOADED FULLSCREEN SETTING!!');
 			}
 			persistentUpdate = true;

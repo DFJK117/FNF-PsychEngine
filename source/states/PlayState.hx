@@ -233,6 +233,11 @@ class PlayState extends MusicBeatState
 	var dbWaitKind:Int = 0;
 	var dbWaitElapsed:Float = 0;
 	var dbSyncTxt:FlxText = null;
+	// Doubao: on-screen physical key-press indicators, one line per player (shows held binds)
+	var keyHintP1:FlxText = null;
+	var keyHintP2:FlxText = null;
+	var keyHintLast1:String = null;
+	var keyHintLast2:String = null;
 	static inline var DB_GO_HOLD:Float = 0.5;
 	static inline var DB_WAIT_TIMEOUT:Float = 8.0;
 	public function dbSideOf(note:Note):Int { return (note != null && note.isOpponent) ? 0 : 1; }
@@ -376,6 +381,54 @@ class PlayState extends MusicBeatState
 			dbSyncTxt = null;
 		}
 		startCountdown();
+	}
+
+	/** Doubao: build the space-separated names of every bind currently held down. */
+	function dbHeldNames(binds:Array<FlxKey>):String
+	{
+		var out:String = '';
+		for (k in binds)
+		{
+			if (FlxG.keys.pressed(k))
+			{
+				if (out.length > 0) out += '  ';
+				out += backend.InputFormatter.getKeyName(k);
+			}
+		}
+		return out;
+	}
+
+	/** Doubao: per-frame on-screen indicator of which physical keys each player is pressing. */
+	public function dbKeyHintTick():Void
+	{
+		var twoP:Bool = DoubaoConfig.isTwoPlayer();
+		var halfW:Float = FlxG.width / 2;
+		if (keyHintP2 == null)
+		{
+			var px:Float = twoP ? halfW : 0;
+			var pw:Float = twoP ? halfW : FlxG.width;
+			keyHintP2 = new FlxText(px, 10, pw, '', 22);
+			keyHintP2.setFormat(Paths.font('vcr.ttf'), 22, FlxColor.WHITE, flixel.text.FlxTextAlign.CENTER, flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			keyHintP2.scrollFactor.set();
+			keyHintP2.cameras = [camHUD];
+			add(keyHintP2);
+			if (twoP)
+			{
+				keyHintP1 = new FlxText(0, 10, halfW, '', 22);
+				keyHintP1.setFormat(Paths.font('vcr.ttf'), 22, FlxColor.CYAN, flixel.text.FlxTextAlign.CENTER, flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+				keyHintP1.scrollFactor.set();
+				keyHintP1.cameras = [camHUD];
+				add(keyHintP1);
+			}
+		}
+		var binds2:Array<FlxKey> = twoP ? DoubaoConfig.P2_KEYS : DoubaoConfig.buildSoloBinds(DoubaoConfig.keyCount);
+		var s2:String = dbHeldNames(binds2);
+		if (s2 != keyHintLast2) { keyHintLast2 = s2; keyHintP2.text = s2; }
+		if (twoP && keyHintP1 != null)
+		{
+			var s1:String = dbHeldNames(DoubaoConfig.P1_KEYS);
+			if (s1 != keyHintLast1) { keyHintLast1 = s1; keyHintP1.text = s1; }
+		}
 	}
 
 	public static var campaignScore:Int = 0;
@@ -1159,6 +1212,16 @@ class PlayState extends MusicBeatState
 		inCutscene = false;
 		var ret:Dynamic = callOnScripts('onStartCountdown', null, true);
 		if(ret != LuaUtils.Function_Stop) {
+			// Doubao: front-load a garbage-collection pass during the countdown so the GC does
+			// not stall mid-song, and poll input/logic at a higher rate for lower key latency.
+			#if cpp
+			hxcpp.Gc.run(true);
+			#end
+			if (ClientPrefs.data.lowInputLatency)
+			{
+				FlxG.persistentUpdate = true;
+				FlxG.updateFramerate = Math.max(120, ClientPrefs.data.framerate);
+			}
 			if (skipCountdown || startOnTime > 0) skipArrowStartTween = true;
 
 			canPause = true;
@@ -1940,6 +2003,8 @@ class PlayState extends MusicBeatState
 
 		// Doubao LAN: exchange stats with the remote player every frame
 		dbNetTick(elapsed);
+		// Doubao: show which physical keys are currently held (per player)
+		if(generatedMusic && !inCutscene) dbKeyHintTick();
 
 		setOnScripts('curDecStep', curDecStep);
 		setOnScripts('curDecBeat', curDecBeat);
@@ -3175,12 +3240,12 @@ class PlayState extends MusicBeatState
 		}
 
 		// Doubao Engine: physical hold state per lane for multi-key / two-player mode
-		var useFixedKeys:Bool = DoubaoConfig.isTwoPlayer() || DoubaoConfig.isSoloMulti();
+		var useFixedKeys:Bool = DoubaoConfig.isTwoPlayer() || DoubaoConfig.keyCount != 4;
 		var holdP2:Array<Bool> = [];
 		var holdP1:Array<Bool> = [];
 		if(useFixedKeys)
 		{
-			var soloBinds:Array<FlxKey> = DoubaoConfig.SOLO_BINDS[DoubaoConfig.keyCount];
+			var soloBinds:Array<FlxKey> = DoubaoConfig.buildSoloBinds(DoubaoConfig.keyCount);
 			for (li in 0...DoubaoConfig.keyCount)
 			{
 				if(DoubaoConfig.isTwoPlayer())
@@ -3578,6 +3643,9 @@ class PlayState extends MusicBeatState
 			videoCutscene = null;
 		}
 		#end
+
+		// Doubao: restore the normal logic/input polling rate when leaving a song
+		FlxG.updateFramerate = ClientPrefs.data.framerate;
 
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
