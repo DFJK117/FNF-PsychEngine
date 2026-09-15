@@ -238,6 +238,10 @@ class PlayState extends MusicBeatState
 	var keyHintP2:FlxText = null;
 	var keyHintLast1:String = null;
 	var keyHintLast2:String = null;
+	#if mobile
+	// Doubao: on-screen multi-touch note layer (Hitbox circles, independent fingers)
+	var touchNotes:TouchNotes = null;
+	#end
 	static inline var DB_GO_HOLD:Float = 0.5;
 	static inline var DB_WAIT_TIMEOUT:Float = 8.0;
 	public function dbSideOf(note:Note):Int { return (note != null && note.isOpponent) ? 0 : 1; }
@@ -1227,6 +1231,9 @@ class PlayState extends MusicBeatState
 			canPause = true;
 			generateStaticArrows(0);
 			generateStaticArrows(1);
+			#if mobile
+			initTouchNotes();
+			#end
 			for (i in 0...playerStrums.length) {
 				setOnScripts('defaultPlayerStrumX' + i, playerStrums.members[i].x);
 				setOnScripts('defaultPlayerStrumY' + i, playerStrums.members[i].y);
@@ -1879,6 +1886,28 @@ class PlayState extends MusicBeatState
 		}
 	}
 
+	#if mobile
+	// Doubao: build the on-screen multi-touch note layer once the receptors exist
+	function initTouchNotes():Void
+	{
+		// Phones are held with thumbs near the bottom edge; default to down-scroll so
+		// the receptors (and the touch circles) sit where the thumbs naturally rest.
+		if (!ClientPrefs.data.downScroll)
+		{
+			ClientPrefs.data.downScroll = true;
+			ClientPrefs.saveSettings();
+		}
+		touchNotes = new TouchNotes(
+			function(lane:Int) { keyPressed(lane); },
+			function(lane:Int) { keyReleased(lane); },
+			function(lane:Int) { keyPressedP1(lane); },
+			function(lane:Int) { keyReleasedP1(lane); },
+			function() { if(startedCountdown && canPause && !paused) openPauseMenu(); });
+		add(touchNotes);
+		touchNotes.setCameras([camHUD]);
+	}
+	#end
+
 	override function openSubState(SubState:FlxSubState)
 	{
 		stagesFunc(function(stage:BaseStage) stage.openSubState(SubState));
@@ -2005,6 +2034,12 @@ class PlayState extends MusicBeatState
 		dbNetTick(elapsed);
 		// Doubao: show which physical keys are currently held (per player)
 		if(generatedMusic && !inCutscene) dbKeyHintTick();
+		#if mobile
+		// Doubao: drive notes from multi-touch (disabled while paused so the pause menu owns touch)
+		if(touchNotes != null && generatedMusic && !paused && !inCutscene && !endingSong) touchNotes.tick(elapsed);
+		// menus (incl. the pause substate) need gestures; raw play must not
+		if(touchNotes != null) backend.Controls.touchGesturesEnabled = paused;
+		#end
 
 		setOnScripts('curDecStep', curDecStep);
 		setOnScripts('curDecBeat', curDecBeat);
@@ -3646,6 +3681,15 @@ class PlayState extends MusicBeatState
 
 		// Doubao: restore the normal logic/input polling rate when leaving a song
 		FlxG.updateFramerate = ClientPrefs.data.framerate;
+		#if mobile
+		if(touchNotes != null)
+		{
+			remove(touchNotes);
+			touchNotes.destroy();
+			touchNotes = null;
+		}
+		backend.Controls.touchGesturesEnabled = true;
+		#end
 
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyRelease);

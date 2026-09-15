@@ -1,0 +1,72 @@
+name: Build Android
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  buildAndroid:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.7
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Set up Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platforms / build-tools / NDK r21e
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;21.4.7075529"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
+
+      - name: Install Haxelibs (mobile-only set, no lua/discord/hxvlc/hscript)
+        run: |
+          set -e
+          haxelib setup ~/haxelib
+          retry() { local n=0; until [ $n -ge 5 ]; do "$@" && return 0; n=$((n+1)); echo ">>> retry $n for: $*"; sleep 6; done; "$@"; }
+          retry haxelib install hxcpp
+          retry haxelib install lime 8.1.2
+          retry haxelib install openfl 9.3.3
+          retry haxelib install flixel 5.6.1
+          retry haxelib install flixel-addons 3.2.2
+          retry haxelib install flixel-tools 1.5.1
+          retry haxelib install tjson 1.4.0
+          retry haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate 768740a56b26aa0c072720e0d1236b94afe68e3e
+          retry haxelib git funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc4632397ef3504d464e90
+          retry haxelib git grig.audio https://gitlab.com/haxe-grig/grig.audio.git cbf91e2180fd2e374924fe74844086aab7891666
+          haxelib set lime 8.1.2
+          haxelib set openfl 9.3.3
+
+      - name: Skip SScript setup mode
+        run: printf 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
+
+      - name: Create Version Tag
+        run: echo "${{github.run_id}}" > VERSION
+
+      - name: Compile Android APK (debug, auto-signed, installable)
+        run: haxelib run lime build android -debug --app-version="1.0.${{github.run_id}}"
+
+      - name: Locate APK
+        run: find export -name "*.apk" -ls
+
+      - name: Publish APK Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: androidAPK
+          path: |
+            export/debug/android/**/*.apk
+            export/release/android/**/*.apk
+          if-no-files-found: error

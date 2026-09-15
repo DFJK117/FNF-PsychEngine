@@ -90,6 +90,11 @@ class Controls
 		var result:Bool = (FlxG.keys.anyJustPressed(keyboardBinds[key]) == true);
 		if(result) controllerMode = false;
 
+		#if mobile
+		scanTouchGestures();
+		result = result || _touchFire[key] == true;
+		#end
+
 		return result || _myGamepadJustPressed(gamepadBinds[key]) == true;
 	}
 
@@ -110,6 +115,66 @@ class Controls
 	}
 
 	public var controllerMode:Bool = false;
+
+	#if mobile
+	// ---- Doubao: touch gestures for every menu.
+	// tap = accept, vertical swipe = ui_up/ui_down, horizontal swipe = ui_left/ui_right,
+	// two-finger tap = back. Evaluated at most once per frame and shared by all getters.
+	public static var touchGesturesEnabled:Bool = true;
+	var _touchFrame:Int = -1;
+	var _touchFire:Map<String,Bool> = new Map();
+	var _touchStart:Map<Int,{x:Float,y:Float}> = new Map();
+
+	function scanTouchGestures():Void
+	{
+		final frame:Int = FlxG.game.loopCount;
+		if (_touchFrame == frame) return;
+		_touchFrame = frame;
+		_touchFire = new Map();
+		if (!touchGesturesEnabled) { _touchStart.clear(); return; }
+
+		for (t in FlxG.touches.list)
+		{
+			if (t.justPressed)
+			{
+				_touchStart[t.id] = {x: t.x, y: t.y};
+			}
+			else if (t.justReleased && _touchStart.exists(t.id))
+			{
+				final s:{x:Float,y:Float} = _touchStart[t.id];
+				_touchStart.remove(t.id);
+				final dx:Float = t.x - s.x;
+				final dy:Float = t.y - s.y;
+				final adx:Float = Math.abs(dx);
+				final ady:Float = Math.abs(dy);
+
+				var otherHeld:Bool = false;
+				for (o in FlxG.touches.list)
+				{
+					if (o.id != t.id && o.pressed && _touchStart.exists(o.id))
+					{
+						final os:{x:Float,y:Float} = _touchStart[o.id];
+						if (Math.abs(o.x - os.x) < 24 && Math.abs(o.y - os.y) < 24)
+							otherHeld = true;
+					}
+				}
+
+				if (otherHeld && adx < 24 && ady < 24)
+				{
+					_touchFire['back'] = true;
+					_touchStart.clear(); // don't let the second finger fire accept afterwards
+				}
+				else if (adx < 24 && ady < 24)
+					_touchFire['accept'] = true;
+				else if (ady > adx)
+					_touchFire[dy < 0 ? 'ui_up' : 'ui_down'] = true;
+				else
+					_touchFire[dx < 0 ? 'ui_left' : 'ui_right'] = true;
+			}
+		}
+	}
+	#end
+
 	private function _myGamepadJustPressed(keys:Array<FlxGamepadInputID>):Bool
 	{
 		if(keys != null)
