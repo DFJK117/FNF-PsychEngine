@@ -152,9 +152,7 @@ class TouchNotes extends FlxTypedGroup<FlxSprite>
 		shape.graphics.endFill();
 		bmp.draw(shape);
 		final spr:FlxSprite = new FlxSprite();
-		spr.pixels = bmp;
-		spr.frameWidth = size;
-		spr.frameHeight = size;
+		spr.pixels = bmp; // set_pixels builds a single frame sized to the bitmap (size x size)
 		spr.centerOrigin();
 		spr.scrollFactor.set();
 		spr.antialiasing = true;
@@ -191,7 +189,7 @@ class TouchNotes extends FlxTypedGroup<FlxSprite>
 				// top strip = pause, never a note
 				if (touch.y < PAUSE_BAND)
 				{
-					topTouches[touch.touchPointID] = {x: touch.x, y: touch.y};
+					topTouches[touch.touchPointID] = {x: (touch.x:Float), y: (touch.y:Float)};
 					continue;
 				}
 				final slot:TouchSlot = hitTest(touch.x);

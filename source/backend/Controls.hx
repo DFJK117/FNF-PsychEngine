@@ -137,7 +137,7 @@ class Controls
 		{
 			if (t.justPressed)
 			{
-				_touchStart[t.touchPointID] = {x: t.x, y: t.y};
+				_touchStart[t.touchPointID] = {x: (t.x:Float), y: (t.y:Float)};
 			}
 			else if (t.justReleased && _touchStart.exists(t.touchPointID))
 			{
