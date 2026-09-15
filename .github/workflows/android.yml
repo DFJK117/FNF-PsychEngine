@@ -41,6 +41,7 @@ jobs:
           haxelib setup ~/haxelib
           retry() { local n=0; until [ $n -ge 5 ]; do "$@" && return 0; n=$((n+1)); echo ">>> retry $n for: $*"; sleep 6; done; "$@"; }
           retry haxelib install hxcpp
+          retry haxelib install hxcpp-debug-server
           retry haxelib install lime 8.1.2
           retry haxelib install openfl 9.3.3
           retry haxelib install flixel 5.6.1
