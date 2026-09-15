@@ -43,9 +43,11 @@ jobs:
           set -e
           haxelib setup ~/haxelib
           retry() { local n=0; until [ $n -ge 5 ]; do "$@" && return 0; n=$((n+1)); echo ">>> retry $n for: $*"; sleep 6; done; "$@"; }
-          # Haxelib only ships hxcpp 4.3.2, which hits the __atomic_compare_exchange_4 runtime crash
-          # on Haxe 4.3. Pin v4.3.21 (contemporary with lime 8.1.2, contains the atomic fix) from git.
-          retry haxelib git hxcpp https://github.com/HaxeFoundation/hxcpp.git v4.3.21
+          # Haxelib only ships hxcpp 4.3.2 (runtime __atomic_compare_exchange_4 crash on Haxe 4.3).
+          # Install the PREBUILT v4.3.21 zip (contains hxcpp.n; a raw git checkout would force a
+          # non-interactive tool rebuild and fail with "Can't continue without hxcpp.n").
+          curl -fsSL --retry 3 --retry-all-errors -o /tmp/hxcpp.zip https://github.com/HaxeFoundation/hxcpp/releases/download/v4.3.21/hxcpp-4.3.21.zip
+          haxelib install /tmp/hxcpp.zip -always
           retry haxelib install hxcpp-debug-server
           retry haxelib install lime 8.1.2
           retry haxelib install openfl 9.3.3
