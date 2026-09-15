@@ -32,8 +32,11 @@ jobs:
         run: |
           yes | sdkmanager --licenses || true
           sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;21.4.7075529"
-          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "ANDROID_SETUP=1" >> $GITHUB_ENV
+          echo "ANDROID_SDK=$SDK" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$SDK/ndk/21.4.7075529" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$SDK/ndk/21.4.7075529" >> $GITHUB_ENV
 
       - name: Install Haxelibs (mobile-only set, no lua/discord/hxvlc/hscript)
         run: |
