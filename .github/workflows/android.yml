@@ -43,7 +43,9 @@ jobs:
           set -e
           haxelib setup ~/haxelib
           retry() { local n=0; until [ $n -ge 5 ]; do "$@" && return 0; n=$((n+1)); echo ">>> retry $n for: $*"; sleep 6; done; "$@"; }
-          retry haxelib install hxcpp
+          # hxcpp 4.3.21 is contemporary with lime 8.1.2 (2024-03), newer than 4.3.2 (fixes the
+          # __atomic_compare_exchange_4 startup crash) and still exposes android.* Java externs
+          retry haxelib install hxcpp 4.3.21
           retry haxelib install hxcpp-debug-server
           retry haxelib install lime 8.1.2
           retry haxelib install openfl 9.3.3

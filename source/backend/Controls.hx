@@ -127,7 +127,7 @@ class Controls
 
 	function scanTouchGestures():Void
 	{
-		final frame:Int = FlxG.game.loopCount;
+		final frame:Int = FlxG.game.ticks;
 		if (_touchFrame == frame) return;
 		_touchFrame = frame;
 		_touchFire = new Map();
@@ -137,12 +137,12 @@ class Controls
 		{
 			if (t.justPressed)
 			{
-				_touchStart[t.id] = {x: t.x, y: t.y};
+				_touchStart[t.touchPointID] = {x: t.x, y: t.y};
 			}
-			else if (t.justReleased && _touchStart.exists(t.id))
+			else if (t.justReleased && _touchStart.exists(t.touchPointID))
 			{
-				final s:{x:Float,y:Float} = _touchStart[t.id];
-				_touchStart.remove(t.id);
+				final s:{x:Float,y:Float} = _touchStart[t.touchPointID];
+				_touchStart.remove(t.touchPointID);
 				final dx:Float = t.x - s.x;
 				final dy:Float = t.y - s.y;
 				final adx:Float = Math.abs(dx);
@@ -151,9 +151,9 @@ class Controls
 				var otherHeld:Bool = false;
 				for (o in FlxG.touches.list)
 				{
-					if (o.id != t.id && o.pressed && _touchStart.exists(o.id))
+					if (o.touchPointID != t.touchPointID && o.pressed && _touchStart.exists(o.touchPointID))
 					{
-						final os:{x:Float,y:Float} = _touchStart[o.id];
+						final os:{x:Float,y:Float} = _touchStart[o.touchPointID];
 						if (Math.abs(o.x - os.x) < 24 && Math.abs(o.y - os.y) < 24)
 							otherHeld = true;
 					}

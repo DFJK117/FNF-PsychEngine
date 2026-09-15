@@ -56,7 +56,7 @@ class TouchNotes extends FlxTypedGroup<FlxSprite>
 	public var totalPress:Int = 0;
 	var stat:FlxText = null;
 
-	function new(press:Int->Void, release:Int->Void, pressP1:Int->Void, releaseP1:Int->Void, pauseCb:Void->Void)
+	public function new(press:Int->Void, release:Int->Void, pressP1:Int->Void, releaseP1:Int->Void, pauseCb:Void->Void)
 	{
 		super();
 		onPress = press;
@@ -152,7 +152,9 @@ class TouchNotes extends FlxTypedGroup<FlxSprite>
 		shape.graphics.endFill();
 		bmp.draw(shape);
 		final spr:FlxSprite = new FlxSprite();
-		spr.loadGraphicFromBitmapData(bmp);
+		spr.pixels = bmp;
+		spr.frameWidth = size;
+		spr.frameHeight = size;
 		spr.centerOrigin();
 		spr.scrollFactor.set();
 		spr.antialiasing = true;
@@ -189,13 +191,13 @@ class TouchNotes extends FlxTypedGroup<FlxSprite>
 				// top strip = pause, never a note
 				if (touch.y < PAUSE_BAND)
 				{
-					topTouches[touch.id] = {x: touch.x, y: touch.y};
+					topTouches[touch.touchPointID] = {x: touch.x, y: touch.y};
 					continue;
 				}
 				final slot:TouchSlot = hitTest(touch.x);
-				if (slot != null && !held.exists(touch.id))
+				if (slot != null && !held.exists(touch.touchPointID))
 				{
-					held[touch.id] = slot;
+					held[touch.touchPointID] = slot;
 					final gi:Int = slot.side * SLOT_STRIDE + slot.lane;
 					final before:Int = (heldCount[gi] == null) ? 0 : heldCount[gi];
 					heldCount[gi] = before + 1;
@@ -210,18 +212,18 @@ class TouchNotes extends FlxTypedGroup<FlxSprite>
 			}
 			else if (touch.justReleased)
 			{
-				if (topTouches.exists(touch.id))
+				if (topTouches.exists(touch.touchPointID))
 				{
-					final s:{x:Float,y:Float} = topTouches[touch.id];
-					topTouches.remove(touch.id);
+					final s:{x:Float,y:Float} = topTouches[touch.touchPointID];
+					topTouches.remove(touch.touchPointID);
 					if (touch.y < PAUSE_BAND + 24 && Math.abs(touch.x - s.x) < 24 && Math.abs(touch.y - s.y) < 24)
 						onPause();
 					continue;
 				}
-				if (held.exists(touch.id))
+				if (held.exists(touch.touchPointID))
 				{
-					final slot:TouchSlot = held[touch.id];
-					held.remove(touch.id);
+					final slot:TouchSlot = held[touch.touchPointID];
+					held.remove(touch.touchPointID);
 					final gi:Int = slot.side * SLOT_STRIDE + slot.lane;
 					var cur:Int = (heldCount[gi] == null) ? 0 : heldCount[gi];
 					if (cur > 0) cur--;
