@@ -8,6 +8,8 @@ on:
 jobs:
   buildAndroid:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4.1.7
 
@@ -81,3 +83,29 @@ jobs:
             export/debug/android/**/*.apk
             export/release/android/**/*.apk
           if-no-files-found: error
+
+      - name: Publish APK to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p rel
+          for f in $(find export -name "*.apk"); do
+            case "$f" in
+              *arm64-v8a*)    cp "$f" rel/DoubaoEngine-Android-arm64.apk;;
+              *armeabi-v7a*)  cp "$f" rel/DoubaoEngine-Android-armv7.apk;;
+              *x86_64*)       cp "$f" rel/DoubaoEngine-Android-x86_64.apk;;
+              *x86*)          cp "$f" rel/DoubaoEngine-Android-x86.apk;;
+              *)              cp "$f" "rel/DoubaoEngine-Android-$(basename "$f")";;
+            esac
+          done
+          ls -la rel
+          TAG="doubao-android"
+          NOTES="Auto-built Android APK (debug, auto-signed, directly installable). arm64 = modern 64-bit phones (recommended); armv7 = older 32-bit devices."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" rel/*.apk --clobber
+          else
+            gh release create "$TAG" rel/*.apk --title "Doubao Engine - Android" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+          fi
+          echo "=== Release assets ==="
+          gh release view "$TAG" --json url,assets -q '.url, (.assets[].name)'
