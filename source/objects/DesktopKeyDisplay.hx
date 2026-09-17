@@ -126,7 +126,9 @@ class DesktopKeyDisplay extends FlxTypedGroup<FlxSprite>
 				totalPress++;
 				pressTimes.push(timeNow);
 				if (ClientPrefs.data.doubaoKeySound)
-					FlxG.sound.play(Paths.sound('db_keyclick'), 0.35);
+				{
+					try { FlxG.sound.play(Paths.sound('db_keyclick'), 0.35); } catch (e:Dynamic) {}
+				}
 			}
 			else if (!held && b.lit)
 			{
@@ -140,7 +142,6 @@ class DesktopKeyDisplay extends FlxTypedGroup<FlxSprite>
 		updateStat(false);
 	}
 
-	var statTimer:Float = 0;
 	function updateStat(force:Bool):Void
 	{
 		statTimer -= 1 / 60;

@@ -42,7 +42,13 @@ jobs:
         run: echo "${{github.run_id}}" > VERSION
       - name: Encode key click sound to OGG
         shell: pwsh
-        run: ffmpeg -y -i assets/shared/sounds/db_keyclick.wav -ac 1 -ar 44100 -c:a libvorbis -q:a 4 assets/shared/sounds/db_keyclick.ogg
+        run: |
+          $exe = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Source
+          if (-not $exe) {
+            python -m pip install --quiet imageio-ffmpeg
+            $exe = python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"
+          }
+          & $exe -y -i assets/shared/sounds/db_keyclick.wav -ac 1 -ar 44100 -c:a libvorbis -q:a 4 assets/shared/sounds/db_keyclick.ogg
       - name: Compile
         run: haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
       - name: Publish Artifact

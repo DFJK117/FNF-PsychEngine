@@ -319,4 +319,123 @@ class DoubaoConfig
 		if (isTwoPlayer()) return true;
 		return rawColumn >= 0 && rawColumn < keyCount;
 	}
+
+	/**
+	 * Scan raw columns and return the SOURCE chart's per-side lane count (1..MAX),
+	 * without touching any state. A vanilla 4K chart uses raw columns 0..7 -> 4.
+	 */
+	public static function detectSourceKeys(sectionsData:Dynamic):Int
+	{
+		var maxRaw:Int = 3; // floor: a vanilla chart always at least spans 0..3
+		var sections:Array<Dynamic> = cast sectionsData;
+		if (sections == null) return 4;
+		for (section in sections)
+		{
+			if (section == null) continue;
+			var noteList:Array<Dynamic> = cast section.sectionNotes;
+			if (noteList == null) continue;
+			for (sn in noteList)
+			{
+				var col:Dynamic = sn[1];
+				if (Std.isOfType(col, Float) || Std.isOfType(col, Int))
+				{
+					var c:Int = Std.int(col);
+					if (c >= 0 && c > maxRaw) maxRaw = c;
+				}
+			}
+		}
+		return Std.int(FlxMath.bound(Math.ceil((maxRaw + 1) / 2), 1, MAX_KEYS));
+	}
+
+	/**
+	 * Pure algorithmic lane conversion: remap every note of a sourceK-lane chart onto
+	 * targetK lanes (4K -> multi-K and multi-K -> fewer K).
+	 *  - Expand (targetK > sourceK): center each source key on its own target key using
+	 *    a strictly injective, left/right-symmetric spread (no two notes ever share a key).
+	 *  - Reduce (targetK < sourceK): monotone compression that covers every target lane,
+	 *    then for each simultaneous chord any notes that collapsed onto the same lane are
+	 *    reassigned to the nearest free lane, so simultaneous notes stack as rarely as
+	 *    possible. When a chord has more notes than lanes the unavoidable overlap stays.
+	 * The two ownership halves (opponent / player) are mapped independently. No-op when
+	 * sourceK == targetK, so AUTO and vanilla 4K charts are completely untouched.
+	 */
+	public static function convertChartColumns(sectionsData:Dynamic, sourceK:Int, targetK:Int):Void
+	{
+		if (sectionsData == null || sourceK < 1 || targetK < 1 || sourceK == targetK) return;
+		var sections:Array<Dynamic> = cast sectionsData;
+
+		// Static base position of each source lane inside one half (0..targetK-1).
+		var base:Array<Int> = [];
+		for (c in 0...sourceK)
+		{
+			var b:Int;
+			if (targetK > sourceK)
+			{
+				// Center source keys on target keys; spacing is >1 so the rounding stays injective.
+				b = (sourceK == 1) ? Std.int(targetK / 2)
+				                   : Std.int(Math.round((c + 0.5) * targetK / sourceK - 0.5));
+			}
+			else
+			{
+				// Monotone floor compression that still reaches the last target lane.
+				b = Std.int(Math.floor(c * targetK / sourceK));
+			}
+			base.push(Std.int(FlxMath.bound(b, 0, targetK - 1)));
+		}
+
+		for (section in sections)
+		{
+			if (section == null) continue;
+			var notes:Array<Dynamic> = cast section.sectionNotes;
+			if (notes == null) continue;
+
+			// Bucket notes per half, then per hit time (a simultaneous chord).
+			var byHalf:Array<Map<Float, Array<Dynamic>>> = [new Map<Float, Array<Dynamic>>(), new Map<Float, Array<Dynamic>>()];
+			var timeOrder:Array<Array<Float>> = [new Array<Float>(), new Array<Float>()];
+			for (note in notes)
+			{
+				var colDyn:Dynamic = note[1];
+				if (!(Std.isOfType(colDyn, Float) || Std.isOfType(colDyn, Int))) continue;
+				var raw:Int = Std.int(colDyn);
+				if (raw < 0) continue; // event note, not a tap
+				var half:Int = raw >= sourceK ? 1 : 0;
+				var lane:Int = raw - half * sourceK;
+				lane = Std.int(FlxMath.bound(lane, 0, sourceK - 1));
+				var t:Float = note[0];
+				var m:Map<Float, Array<Dynamic>> = byHalf[half];
+				if (!m.exists(t)) { m.set(t, []); timeOrder[half].push(t); }
+				m.get(t).push({note: note, lane: lane});
+			}
+
+			for (half in 0...2)
+			{
+				var map:Map<Float, Array<Dynamic>> = byHalf[half];
+				for (ti in 0...timeOrder[half].length)
+				{
+					var chord:Array<Dynamic> = map.get(timeOrder[half][ti]);
+					chord.sort(function(a:Dynamic, b:Dynamic):Int return Std.int(a.lane - b.lane));
+					var used:Map<Int, Bool> = new Map();
+					for (item in chord)
+					{
+						var cand:Int = base[Std.int(item.lane)];
+						if (used.exists(cand))
+						{
+							// Collision (only expected when reducing): nearest free lane.
+							var best:Int = -1;
+							var bestDist:Int = 1 << 30;
+							for (d in 0...targetK)
+							{
+								if (used.exists(d)) continue;
+								var dist:Int = Std.int(Math.abs(d - cand));
+								if (dist < bestDist) { bestDist = dist; best = d; }
+							}
+							if (best >= 0) cand = best; // no free lane -> keep the unavoidable stack
+						}
+						used.set(cand, true);
+						item.note[1] = cand + half * targetK;
+					}
+				}
+			}
+		}
+	}
 }

@@ -102,6 +102,14 @@ class Song
 		// Doubao Engine: in auto mode, infer lane count from raw note columns before normalizing
 		DoubaoConfig.applyDetectedKeyCount(sectionsData);
 
+		// Doubao Engine: pure algorithmic lane conversion ONLY when the player manually
+		// forced a fixed key count. AUTO keeps the chart exactly as detected (zero change).
+		if (!DoubaoConfig.autoKeys)
+		{
+			var dbSourceK:Int = DoubaoConfig.detectSourceKeys(sectionsData);
+			DoubaoConfig.convertChartColumns(sectionsData, dbSourceK, DoubaoConfig.keyCount);
+		}
+
 		for (section in sectionsData)
 		{
 			var beats:Null<Float> = cast section.sectionBeats;
