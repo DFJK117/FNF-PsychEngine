@@ -390,12 +390,11 @@ class DoubaoConfig
 			if (notes == null) continue;
 
 			// Bucket notes per half, then per hit time (a simultaneous chord).
-			var byHalf:Array<Map<Float, Array<Dynamic>>> = [];
-			byHalf.push(new Map());
-			byHalf.push(new Map());
-			var timeOrder:Array<Array<Float>> = [];
-			timeOrder.push([]);
-			timeOrder.push([]);
+			// Time is quantized to a 1/100000 s Int key: Haxe's Map abstract has no Float-keyed
+			// constructor branch, and this resolution is far below any judgement window while
+			// true chords share the exact same source time and therefore the same key.
+			var byHalf:Array<Map<Int, Array<Dynamic>>> = [new Map<Int, Array<Dynamic>>(), new Map<Int, Array<Dynamic>>()];
+			var timeOrder:Array<Array<Int>> = [new Array<Int>(), new Array<Int>()];
 			for (note in notes)
 			{
 				var colDyn:Dynamic = note[1];
@@ -405,15 +404,15 @@ class DoubaoConfig
 				var half:Int = raw >= sourceK ? 1 : 0;
 				var lane:Int = raw - half * sourceK;
 				lane = Std.int(FlxMath.bound(lane, 0, sourceK - 1));
-				var t:Float = note[0];
-				var m:Map<Float, Array<Dynamic>> = byHalf[half];
-				if (!m.exists(t)) { m.set(t, []); timeOrder[half].push(t); }
-				m.get(t).push({note: note, lane: lane});
+				var tk:Int = Math.round(note[0] * 100000);
+				var m:Map<Int, Array<Dynamic>> = byHalf[half];
+				if (!m.exists(tk)) { m.set(tk, []); timeOrder[half].push(tk); }
+				m.get(tk).push({note: note, lane: lane});
 			}
 
 			for (half in 0...2)
 			{
-				var map:Map<Float, Array<Dynamic>> = byHalf[half];
+				var map:Map<Int, Array<Dynamic>> = byHalf[half];
 				for (ti in 0...timeOrder[half].length)
 				{
 					var chord:Array<Dynamic> = map.get(timeOrder[half][ti]);
