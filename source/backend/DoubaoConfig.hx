@@ -390,8 +390,12 @@ class DoubaoConfig
 			if (notes == null) continue;
 
 			// Bucket notes per half, then per hit time (a simultaneous chord).
-			var byHalf:Array<Map<Float, Array<Dynamic>>> = [new Map<Float, Array<Dynamic>>(), new Map<Float, Array<Dynamic>>()];
-			var timeOrder:Array<Array<Float>> = [new Array<Float>(), new Array<Float>()];
+			var byHalf:Array<Map<Float, Array<Dynamic>>> = [];
+			byHalf.push(new Map());
+			byHalf.push(new Map());
+			var timeOrder:Array<Array<Float>> = [];
+			timeOrder.push([]);
+			timeOrder.push([]);
 			for (note in notes)
 			{
 				var colDyn:Dynamic = note[1];
