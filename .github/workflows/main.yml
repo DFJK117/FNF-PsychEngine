@@ -8,6 +8,8 @@ on:
 jobs:
   buildWindows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4.1.7
       - uses: krdlab/setup-haxe@master
@@ -38,6 +40,9 @@ jobs:
         shell: cmd
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION
+      - name: Encode key click sound to OGG
+        shell: pwsh
+        run: ffmpeg -y -i assets/shared/sounds/db_keyclick.wav -ac 1 -ar 44100 -c:a libvorbis -q:a 4 assets/shared/sounds/db_keyclick.ogg
       - name: Compile
         run: haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
       - name: Publish Artifact
@@ -45,3 +50,19 @@ jobs:
         with:
           name: windowsBuild
           path: export/release/windows/bin
+      - name: Publish Windows build to GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          Compress-Archive -Path "export/release/windows/bin/*" -DestinationPath "DoubaoEngine-Windows.zip" -Force
+          $tag = "doubao-windows"
+          gh release view $tag *>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag DoubaoEngine-Windows.zip --clobber
+          } else {
+            gh release create $tag DoubaoEngine-Windows.zip --title "Doubao Engine - Windows" --notes "Windows build: multi-key 1K-61K, two-player (P1 WASD / P2 arrows), LAN P2P, NFE-style physical-key light bar with CPS, optional key click sound, low input latency, real fullscreen." --prerelease --target "$env:GITHUB_SHA"
+          }
+          gh release view $tag --json url,assets --jq '.url, (.assets[].name)'

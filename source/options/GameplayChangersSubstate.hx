@@ -88,6 +88,16 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		dbLatency.customGet = function() return ClientPrefs.data.lowInputLatency;
 		dbLatency.customSet = function(v) ClientPrefs.data.lowInputLatency = v;
 		optionsArray.push(dbLatency);
+
+		var dbKeyDisp:GameplayOption = new GameplayOption('Key Display', 'doubaoKeyDisplay', BOOL, ClientPrefs.data.doubaoKeyDisplay);
+		dbKeyDisp.customGet = function() return ClientPrefs.data.doubaoKeyDisplay;
+		dbKeyDisp.customSet = function(v) ClientPrefs.data.doubaoKeyDisplay = v;
+		optionsArray.push(dbKeyDisp);
+
+		var dbKeySnd:GameplayOption = new GameplayOption('Key Click Sound', 'doubaoKeySound', BOOL, ClientPrefs.data.doubaoKeySound);
+		dbKeySnd.customGet = function() return ClientPrefs.data.doubaoKeySound;
+		dbKeySnd.customSet = function(v) ClientPrefs.data.doubaoKeySound = v;
+		optionsArray.push(dbKeySnd);
 		// ===== End Doubao Engine options =====
 
 		var goption:GameplayOption = new GameplayOption('Scroll Type', 'scrolltype', STRING, 'multiplicative', ["multiplicative", "constant"]);

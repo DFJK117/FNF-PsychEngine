@@ -93,6 +93,10 @@ import states.TitleState;
 	public var doubaoFullscreen:Bool = false;
 	// Doubao Engine: poll input/logic at a higher rate and front-load GC for lower latency
 	public var lowInputLatency:Bool = true;
+	// Doubao Engine: NFE-style physical-key light bar on desktop (circles + letters + CPS)
+	public var doubaoKeyDisplay:Bool = true;
+	// Doubao Engine: short click sound whenever a bound lane key is pressed
+	public var doubaoKeySound:Bool = false;
 }
 
 class ClientPrefs {

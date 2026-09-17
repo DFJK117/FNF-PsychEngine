@@ -242,6 +242,10 @@ class PlayState extends MusicBeatState
 	// Doubao: on-screen multi-touch note layer (Hitbox circles, independent fingers)
 	var touchNotes:TouchNotes = null;
 	#end
+	#if desktop
+	// Doubao: NFE-style physical-key light bar (circles + letters + CPS), HUD only
+	var keyDisplay:DesktopKeyDisplay = null;
+	#end
 	static inline var DB_GO_HOLD:Float = 0.5;
 	static inline var DB_WAIT_TIMEOUT:Float = 8.0;
 	public function dbSideOf(note:Note):Int { return (note != null && note.isOpponent) ? 0 : 1; }
@@ -1234,6 +1238,9 @@ class PlayState extends MusicBeatState
 			#if mobile
 			initTouchNotes();
 			#end
+			#if desktop
+			initKeyDisplay();
+			#end
 			for (i in 0...playerStrums.length) {
 				setOnScripts('defaultPlayerStrumX' + i, playerStrums.members[i].x);
 				setOnScripts('defaultPlayerStrumY' + i, playerStrums.members[i].y);
@@ -1908,6 +1915,17 @@ class PlayState extends MusicBeatState
 	}
 	#end
 
+	#if desktop
+	// Doubao: build the NFE-style physical-key light bar once the receptors exist
+	function initKeyDisplay():Void
+	{
+		if (!ClientPrefs.data.doubaoKeyDisplay || keyDisplay != null) return;
+		keyDisplay = new DesktopKeyDisplay();
+		add(keyDisplay);
+		keyDisplay.setCameras([camHUD]);
+	}
+	#end
+
 	override function openSubState(SubState:FlxSubState)
 	{
 		stagesFunc(function(stage:BaseStage) stage.openSubState(SubState));
@@ -2032,8 +2050,18 @@ class PlayState extends MusicBeatState
 
 		// Doubao LAN: exchange stats with the remote player every frame
 		dbNetTick(elapsed);
+		// Doubao: desktop NFE-style key light bar (falls back to the old text hint when disabled)
+		#if desktop
+		if (ClientPrefs.data.doubaoKeyDisplay)
+		{
+			if (keyDisplay == null) initKeyDisplay();
+			if (keyDisplay != null && generatedMusic && !paused && !inCutscene && !endingSong) keyDisplay.tick(elapsed);
+		}
+		else if (generatedMusic && !inCutscene) dbKeyHintTick();
+		#else
 		// Doubao: show which physical keys are currently held (per player)
 		if(generatedMusic && !inCutscene) dbKeyHintTick();
+		#end
 		#if mobile
 		// Doubao: drive notes from multi-touch (disabled while paused so the pause menu owns touch)
 		if(touchNotes != null && generatedMusic && !paused && !inCutscene && !endingSong) touchNotes.tick(elapsed);
@@ -3689,6 +3717,14 @@ class PlayState extends MusicBeatState
 			touchNotes = null;
 		}
 		backend.Controls.touchGesturesEnabled = true;
+		#end
+		#if desktop
+		if(keyDisplay != null)
+		{
+			remove(keyDisplay);
+			keyDisplay.destroy();
+			keyDisplay = null;
+		}
 		#end
 
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
