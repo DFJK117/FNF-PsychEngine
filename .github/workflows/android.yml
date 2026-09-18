@@ -47,7 +47,22 @@ jobs:
           retry() { local n=0; until [ $n -ge 5 ]; do "$@" && return 0; n=$((n+1)); echo ">>> retry $n for: $*"; sleep 6; done; "$@"; }
           # Pinned git libs: on Linux haxelib shallow-clones and cannot checkout a non-HEAD
           # commit SHA ("fatal: unable to read tree"), so full-clone -> checkout SHA -> haxelib dev.
-          gitpin() { local name="$1" url="$2" sha="$3" dir="$HOME/hxlibs/$1"; local n=0; until [ $n -ge 5 ]; do rm -rf "$dir"; if git clone --recursive "$url" "$dir" && git -C "$dir" checkout "$sha"; then haxelib dev "$name" "$dir" && return 0; fi; n=$((n+1)); echo ">>> retry $n gitpin $name"; sleep 6; done; echo "FAILED gitpin $name"; return 1; }
+          gitpin() {
+            local name="$1" url="$2" sha="$3" allow="$4" dir="$HOME/hxlibs/$1"; local n=0
+            until [ $n -ge 5 ]; do
+              rm -rf "$dir"
+              if git clone --recursive "$url" "$dir"; then
+                if git -C "$dir" checkout "$sha" 2>/dev/null; then
+                  haxelib dev "$name" "$dir" && return 0
+                elif [ "$allow" = "1" ]; then
+                  echo "WARN: $name pin $sha unavailable upstream; using default HEAD $(git -C "$dir" rev-parse --short HEAD)"
+                  haxelib dev "$name" "$dir" && return 0
+                fi
+              fi
+              n=$((n+1)); echo ">>> retry $n gitpin $name"; sleep 6
+            done
+            echo "FAILED gitpin $name"; return 1
+          }
           # Haxelib only ships hxcpp 4.3.2 (runtime __atomic_compare_exchange_4 crash on Haxe 4.3).
           # Install the PREBUILT v4.3.21 zip (contains hxcpp.n; a raw git checkout would force a
           # non-interactive tool rebuild and fail with "Can't continue without hxcpp.n").
@@ -60,7 +75,7 @@ jobs:
           retry haxelib install flixel-tools 1.5.1
           retry haxelib install tjson 1.4.0
           gitpin flxanimate https://github.com/Dot-Stuff/flxanimate 768740a56b26aa0c072720e0d1236b94afe68e3e
-          gitpin funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc9632397ef3504d464e90
+          gitpin funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc9632397ef3504d464e90 1
           gitpin grig.audio https://gitlab.com/haxe-grig/grig.audio.git cbf91e2180fd2e374924fe74844086aab7891666
           haxelib set lime 8.1.2
           haxelib set openfl 9.3.3
