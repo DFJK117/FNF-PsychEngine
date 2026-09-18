@@ -82,7 +82,9 @@ jobs:
           retry haxelib install flixel-tools 1.5.1
           retry haxelib install tjson 1.4.0
           gitpin flxanimate https://github.com/Dot-Stuff/flxanimate 768740a56b26aa0c072720e0d1236b94afe68e3e
-          gitpin funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc9632397ef3504d464e90 0
+          # funkin.vis: original pin 22b1ce0 was removed upstream; default main now targets the
+          # new grig API (8-arg makeLogGraph). useGrig tip matches our pinned grig cbf91e2 (4-arg) and Psych 1.0.4.
+          gitpin funkin.vis https://github.com/FunkinCrew/funkVis 38261833590773cb1de34ac5d11e0825696fc340 0
           gitpin grig.audio https://gitlab.com/haxe-grig/grig.audio.git cbf91e2180fd2e374924fe74844086aab7891666
           haxelib set lime 8.1.2
           haxelib set openfl 9.3.3
