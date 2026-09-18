@@ -40,7 +40,7 @@ jobs:
           echo "ANDROID_NDK_ROOT=$SDK/ndk/21.4.7075529" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK/ndk/21.4.7075529" >> $GITHUB_ENV
 
-      - name: Install Haxelibs (mobile-only set, no lua/discord/hxvlc/hscript)
+      - name: Install Haxelibs (mobile-only set, no lua/discord/hxvlc/hscript, no debug server)
         run: |
           set -e
           haxelib setup ~/haxelib
@@ -50,7 +50,6 @@ jobs:
           # non-interactive tool rebuild and fail with "Can't continue without hxcpp.n").
           curl -fsSL --retry 3 --retry-all-errors -o /tmp/hxcpp.zip https://github.com/HaxeFoundation/hxcpp/releases/download/v4.3.21/hxcpp-4.3.21.zip
           haxelib install /tmp/hxcpp.zip -always
-          retry haxelib install hxcpp-debug-server
           retry haxelib install lime 8.1.2
           retry haxelib install openfl 9.3.3
           retry haxelib install flixel 5.6.1
@@ -58,7 +57,7 @@ jobs:
           retry haxelib install flixel-tools 1.5.1
           retry haxelib install tjson 1.4.0
           retry haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate 768740a56b26aa0c072720e0d1236b94afe68e3e
-          retry haxelib git funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc4632397ef3504d464e90
+          retry haxelib git funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc9632397ef3504d464e90
           retry haxelib git grig.audio https://gitlab.com/haxe-grig/grig.audio.git cbf91e2180fd2e374924fe74844086aab7891666
           haxelib set lime 8.1.2
           haxelib set openfl 9.3.3
@@ -69,19 +68,45 @@ jobs:
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION
 
-      - name: Compile Android APK (debug, auto-signed, installable)
-        run: haxelib run lime build android -debug --app-version="1.0.${{github.run_id}}"
+      - name: Compile Android APK (RELEASE, optimized)
+        run: haxelib run lime build android --app-version="1.0.${{github.run_id}}"
 
       - name: Locate APK
         run: find export -name "*.apk" -ls
+
+      - name: Sign release APKs (zipalign + apksigner, installable)
+        run: |
+          set -e
+          BT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/33.0.2"
+          KS="$HOME/doubao.keystore"
+          keytool -genkeypair -v -keystore "$KS" -storepass android -keypass android \
+            -alias doubao -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Doubao Engine, O=Doubao, C=CN"
+          mkdir -p signed
+          map_name() {
+            case "$1" in
+              *arm64-v8a*)   echo "DoubaoEngine-Android-arm64.apk";;
+              *armeabi-v7a*) echo "DoubaoEngine-Android-armv7.apk";;
+              *x86_64*)      echo "DoubaoEngine-Android-x86_64.apk";;
+              *x86*)         echo "DoubaoEngine-Android-x86.apk";;
+              *)             echo "DoubaoEngine-Android.apk";;
+            esac
+          }
+          for f in $(find export -name "*.apk" | sort); do
+            name="$(map_name "$f")"
+            echo "=== signing $f -> signed/$name ==="
+            "$BT/zipalign" -p -f 4 "$f" "/tmp/aligned.apk"
+            "$BT/apksigner" sign --ks "$KS" --ks-pass pass:android --key-pass pass:android \
+              --ks-key-alias doubao --out "signed/$name" "/tmp/aligned.apk"
+            "$BT/apksigner" verify --verbose "signed/$name" || true
+          done
+          ls -la signed
 
       - name: Publish APK Artifact
         uses: actions/upload-artifact@v4.3.4
         with:
           name: androidAPK
-          path: |
-            export/debug/android/**/*.apk
-            export/release/android/**/*.apk
+          path: signed/*.apk
           if-no-files-found: error
 
       - name: Publish APK to GitHub Release
@@ -89,23 +114,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          mkdir -p rel
-          for f in $(find export -name "*.apk"); do
-            case "$f" in
-              *arm64-v8a*)    cp "$f" rel/DoubaoEngine-Android-arm64.apk;;
-              *armeabi-v7a*)  cp "$f" rel/DoubaoEngine-Android-armv7.apk;;
-              *x86_64*)       cp "$f" rel/DoubaoEngine-Android-x86_64.apk;;
-              *x86*)          cp "$f" rel/DoubaoEngine-Android-x86.apk;;
-              *)              cp "$f" "rel/DoubaoEngine-Android-$(basename "$f")";;
-            esac
-          done
-          ls -la rel
           TAG="doubao-android"
-          NOTES="Auto-built Android APK (debug, auto-signed, directly installable). arm64 = modern 64-bit phones (recommended); armv7 = older 32-bit devices."
+          NOTES="Doubao Engine Android (RELEASE build, signed & directly installable). Optimized, no on-screen debug terminal. arm64 = modern 64-bit phones (recommended); armv7 = older 32-bit; the fat DoubaoEngine-Android.apk works on both."
+          # Remove the old debug asset so users cannot download the buggy debug build by mistake
+          gh release delete-asset "$TAG" "DoubaoEngine-Android-PsychEngine-debug.apk" -y || true
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" rel/*.apk --clobber
+            gh release upload "$TAG" signed/*.apk --clobber
           else
-            gh release create "$TAG" rel/*.apk --title "Doubao Engine - Android" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+            gh release create "$TAG" signed/*.apk --title "Doubao Engine - Android" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
           fi
           echo "=== Release assets ==="
           gh release view "$TAG" --json url,assets -q '.url, (.assets[].name)'

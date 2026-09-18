@@ -2,7 +2,7 @@
 <project>
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Doubao Engine" file="PsychEngine" packageName="com.shadowmario.psychengine" package="com.shadowmario.psychengine" main="Main" version="0.2.8" company="Doubao" />
+	<app title="Doubao Engine" file="PsychEngine" packageName="com.shadowmario.psychengine" package="com.shadowmario.psychengine" main="Main" version="1.0.4" company="Doubao" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
@@ -28,7 +28,7 @@
 	<define name="TRANSLATIONS_ALLOWED" />
 	<define name="IRIS_DEBUG"/>
 	
-	<define name="MULTITHREADED_LOADING" /> <!-- UNCOMMENTING THIS LINE WILL ENABLE MULTITHREADED LOADING, WHICH IMPROVES LOADING TIMES, BUT APPARENTLY CAN FREEZE THE GAME ON SONG LOAD IN OLDER PCs? -->
+	<define name="MULTITHREADED_LOADING" if="desktop" /> <!-- Doubao: desktop-only; multithreaded song load can freeze/crash on android hxcpp -->
 	<define name="SHOW_LOADING_SCREEN" />
 	<define name="PSYCH_WATERMARKS"/> <!-- DELETE THIS TO REMOVE THE PSYCH LOGO FROM LOADING SCREEN -->
 	<define name="BASE_GAME_FILES" /> <!-- Doubao Engine: always bundle base_game (week icons/characters/songs) even without -DofficialBuild -->
@@ -52,6 +52,11 @@
 
 	<!--Mobile-specific-->
 	<window if="mobile" orientation="landscape" fullscreen="true" width="0" height="0" resizable="false"/>
+
+	<!--Doubao: guarantee the `mobile` conditional on android/ios even if a backend omits it,
+		so the touch note layer and mobile options are always compiled into phone builds-->
+	<define name="mobile" if="android" />
+	<define name="mobile" if="ios" />
 
 	<!-- Doubao Engine: Android permissions & SDK targets (LAN/P2P online needs INTERNET) -->
 	<config:android permission="android.permission.INTERNET" if="android"/>
@@ -137,7 +142,8 @@
 	<haxedef name="NO_PRECOMPILED_HEADERS" if="linux" />
 
 	<!-- Enables a terminal log prompt on debug builds -->
-	<haxelib name="hxcpp-debug-server" if="debug"/>
+	<!-- Doubao: never on phones; on android its terminal overlay auto-pops over the game -->
+	<haxelib name="hxcpp-debug-server" if="debug && !mobile"/>
 	<haxedef name="HXC_LIBVLC_LOGGING" if="VIDEOS_ALLOWED debug" />
 	<haxedef name="HXVLC_NO_SHARE_DIRECTORY" if="VIDEOS_ALLOWED" />
 	<define name="x86_BUILD" if="32bits" />
